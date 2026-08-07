@@ -1,0 +1,11 @@
+# Papers Radar — pinned dependencies (Python 3.12)
+# Web app (kept lean: ~60-90 MB resident with uvicorn single worker)
+fastapi==0.115.8
+uvicorn==0.34.0
+jinja2==3.1.5
+python-multipart==0.0.20
+# Pipeline only (never imported by the web app)
+numpy==2.2.2
+# Tests
+pytest==8.3.4
+httpx==0.28.1

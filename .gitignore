@@ -1,0 +1,22 @@
+# secrets & machine-local config
+.env
+*.env
+!.env.example
+
+# database & runtime state
+data/
+*.db
+*.db-wal
+*.db-shm
+
+# logs & caches
+logs/
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+
+# local scratch
+*.log
+.DS_Store

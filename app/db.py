@@ -1,0 +1,232 @@
+"""SQLite access layer: single-file DB, WAL mode, schema-on-connect.
+
+Shared by the web app and the pipeline CLIs. Every caller gets its own
+connection (`connect()`); SQLite WAL handles the single-writer coordination
+we need (uvicorn single worker + one sequential pipeline process).
+"""
+from __future__ import annotations
+
+import json
+import sqlite3
+import datetime as dt
+
+from app.config import db_path
+
+SCHEMA = """
+CREATE TABLE IF NOT EXISTS users (
+    id          INTEGER PRIMARY KEY,
+    email       TEXT NOT NULL UNIQUE,
+    name        TEXT DEFAULT '',
+    is_admin    INTEGER DEFAULT 0,
+    frequency   TEXT DEFAULT 'daily',          -- daily | weekly | none
+    shortlist_size INTEGER,                    -- NULL = global default
+    interest_statement TEXT DEFAULT '',        -- onboarding step 2, in their own words
+    onboarded_at TEXT,
+    created_at  TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS auth_tokens (
+    token_hash  TEXT PRIMARY KEY,
+    email       TEXT NOT NULL,
+    dev_link    TEXT,                          -- full URL, dev mode only
+    created_at  TEXT NOT NULL,
+    expires_at  TEXT NOT NULL,
+    used_at     TEXT
+);
+CREATE TABLE IF NOT EXISTS login_attempts (
+    email       TEXT,
+    ip          TEXT,
+    ts          TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS profiles (
+    user_id     INTEGER PRIMARY KEY REFERENCES users(id),
+    version     TEXT NOT NULL,
+    profile_json TEXT NOT NULL,                -- judge.py contract (see DESIGN.md)
+    updated_at  TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS seeds (
+    id          INTEGER PRIMARY KEY,
+    user_id     INTEGER NOT NULL REFERENCES users(id),
+    doi         TEXT DEFAULT '',
+    openalex_id TEXT DEFAULT '',
+    title       TEXT NOT NULL,
+    abstract    TEXT DEFAULT '',
+    source      TEXT DEFAULT 'onboarding',     -- onboarding | settings | import
+    added_at    TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_seeds_user ON seeds(user_id);
+CREATE TABLE IF NOT EXISTS seed_embeddings (
+    seed_id     INTEGER NOT NULL REFERENCES seeds(id),
+    embedder    TEXT NOT NULL,
+    dim         INTEGER NOT NULL,
+    vector      BLOB NOT NULL,
+    created_at  TEXT NOT NULL,
+    UNIQUE(seed_id, embedder)
+);
+CREATE TABLE IF NOT EXISTS papers (
+    id          INTEGER PRIMARY KEY,
+    key         TEXT NOT NULL UNIQUE,          -- doi-lower or normalized title
+    doi         TEXT DEFAULT '',
+    title       TEXT NOT NULL,
+    venue       TEXT DEFAULT '',
+    authors_json TEXT DEFAULT '[]',
+    pub_date    TEXT DEFAULT '',
+    created_date TEXT DEFAULT '',
+    type        TEXT DEFAULT '',
+    abstract    TEXT DEFAULT '',
+    oa_url      TEXT DEFAULT '',
+    source      TEXT DEFAULT '',               -- openalex | arxiv | socarxiv | psyarxiv | email (future)
+    concept_ids_json TEXT DEFAULT '[]',
+    countries_json TEXT DEFAULT '[]',
+    first_seen  TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_papers_first_seen ON papers(first_seen);
+CREATE TABLE IF NOT EXISTS paper_embeddings (
+    paper_id    INTEGER NOT NULL REFERENCES papers(id),
+    embedder    TEXT NOT NULL,
+    dim         INTEGER NOT NULL,
+    vector      BLOB NOT NULL,
+    created_at  TEXT NOT NULL,
+    UNIQUE(paper_id, embedder)
+);
+CREATE TABLE IF NOT EXISTS judgments (
+    user_id     INTEGER NOT NULL REFERENCES users(id),
+    paper_id    INTEGER NOT NULL REFERENCES papers(id),
+    profile_version TEXT NOT NULL,
+    fit         REAL NOT NULL,                 -- 0-10; -1 = judge failed
+    flavors_json TEXT DEFAULT '[]',
+    why         TEXT DEFAULT '',
+    provider    TEXT DEFAULT '',
+    judged_at   TEXT NOT NULL,
+    UNIQUE(user_id, paper_id, profile_version)
+);
+CREATE TABLE IF NOT EXISTS briefing_items (
+    user_id     INTEGER NOT NULL REFERENCES users(id),
+    date        TEXT NOT NULL,
+    paper_id    INTEGER NOT NULL REFERENCES papers(id),
+    rank        INTEGER NOT NULL,
+    fit         REAL,
+    UNIQUE(user_id, date, paper_id)
+);
+CREATE TABLE IF NOT EXISTS feedback (
+    user_id     INTEGER NOT NULL REFERENCES users(id),
+    paper_id    INTEGER NOT NULL REFERENCES papers(id),
+    vote        TEXT NOT NULL,                 -- up | down | '' (cleared)
+    title       TEXT DEFAULT '',
+    ts          TEXT NOT NULL,
+    UNIQUE(user_id, paper_id)
+);
+CREATE TABLE IF NOT EXISTS clicks (
+    id          INTEGER PRIMARY KEY,
+    user_id     INTEGER NOT NULL,
+    paper_id    INTEGER NOT NULL,
+    ts          TEXT NOT NULL,
+    context     TEXT DEFAULT ''                -- dashboard | email
+);
+CREATE TABLE IF NOT EXISTS provider_usage (
+    date        TEXT NOT NULL,
+    provider    TEXT NOT NULL,
+    ok_count    INTEGER DEFAULT 0,
+    err_count   INTEGER DEFAULT 0,
+    last_detail TEXT DEFAULT '',
+    last_ts     TEXT DEFAULT '',
+    UNIQUE(date, provider)
+);
+CREATE TABLE IF NOT EXISTS pipeline_runs (
+    id          INTEGER PRIMARY KEY,
+    stage       TEXT NOT NULL,
+    started_at  TEXT NOT NULL,
+    finished_at TEXT,
+    status      TEXT DEFAULT 'running',        -- running | ok | error
+    detail      TEXT DEFAULT ''
+);
+-- RESERVED for per-user inbound email (Scholar alert forwarding) — nothing
+-- writes this yet; see DESIGN.md §7.
+CREATE TABLE IF NOT EXISTS email_ingest (
+    id          INTEGER PRIMARY KEY,
+    user_id     INTEGER REFERENCES users(id),
+    msg_id      TEXT,
+    received_at TEXT,
+    from_addr   TEXT,
+    subject     TEXT,
+    raw_path    TEXT,
+    parsed_json TEXT,
+    status      TEXT DEFAULT 'new'
+);
+"""
+
+
+def connect(path=None) -> sqlite3.Connection:
+    con = sqlite3.connect(path or db_path(), timeout=30)
+    con.row_factory = sqlite3.Row
+    con.execute("PRAGMA journal_mode=WAL")
+    con.execute("PRAGMA foreign_keys=ON")
+    con.executescript(SCHEMA)
+    return con
+
+
+def now() -> str:
+    return dt.datetime.now().isoformat(timespec="seconds")
+
+
+def today() -> str:
+    return dt.date.today().isoformat()
+
+
+# --- small shared helpers ----------------------------------------------------
+
+def get_user_by_email(con, email: str):
+    return con.execute("SELECT * FROM users WHERE email=?", (email.lower(),)).fetchone()
+
+
+def get_user(con, uid: int):
+    return con.execute("SELECT * FROM users WHERE id=?", (uid,)).fetchone()
+
+
+def ensure_user(con, email: str):
+    """Existing row or a fresh one (first successful magic-link click)."""
+    row = get_user_by_email(con, email)
+    if row:
+        return row
+    con.execute("INSERT INTO users(email, created_at) VALUES(?,?)",
+                (email.lower(), now()))
+    con.commit()
+    return get_user_by_email(con, email)
+
+
+def get_profile(con, uid: int) -> dict | None:
+    row = con.execute("SELECT * FROM profiles WHERE user_id=?", (uid,)).fetchone()
+    if not row:
+        return None
+    prof = json.loads(row["profile_json"])
+    prof["version"] = row["version"]
+    return prof
+
+
+def save_profile(con, uid: int, prof: dict, version: str) -> None:
+    body = {k: v for k, v in prof.items() if k != "version"}
+    con.execute(
+        "INSERT INTO profiles(user_id, version, profile_json, updated_at) VALUES(?,?,?,?) "
+        "ON CONFLICT(user_id) DO UPDATE SET version=excluded.version, "
+        "profile_json=excluded.profile_json, updated_at=excluded.updated_at",
+        (uid, version, json.dumps(body, ensure_ascii=False), now()))
+    con.commit()
+
+
+def record_provider(con, provider: str, ok: bool, detail: str = "") -> int:
+    """Bump today's counter for a provider; returns ok_count so far today."""
+    con.execute(
+        "INSERT INTO provider_usage(date, provider, ok_count, err_count, last_detail, last_ts) "
+        "VALUES(?,?,?,?,?,?) ON CONFLICT(date, provider) DO UPDATE SET "
+        "ok_count = ok_count + excluded.ok_count, err_count = err_count + excluded.err_count, "
+        "last_detail = excluded.last_detail, last_ts = excluded.last_ts",
+        (today(), provider, 1 if ok else 0, 0 if ok else 1, detail[:200], now()))
+    con.commit()
+    row = con.execute("SELECT ok_count FROM provider_usage WHERE date=? AND provider=?",
+                      (today(), provider)).fetchone()
+    return row["ok_count"] if row else 0
+
+
+def provider_calls_today(con, provider: str) -> int:
+    row = con.execute("SELECT ok_count FROM provider_usage WHERE date=? AND provider=?",
+                      (today(), provider)).fetchone()
+    return row["ok_count"] if row else 0
