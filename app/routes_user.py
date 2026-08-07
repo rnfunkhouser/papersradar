@@ -245,6 +245,7 @@ def dashboard(request: Request, date: str = ""):
         if sel:
             items = con.execute(
                 "SELECT p.*, b.rank, b.fit AS b_fit, j.flavors_json, j.why, "
+                "MAX(j.judged_at) AS _newest_judgment, "     # deterministic row pick
                 "COALESCE(f.vote, '') AS vote "
                 "FROM briefing_items b "
                 "JOIN papers p ON p.id = b.paper_id "
