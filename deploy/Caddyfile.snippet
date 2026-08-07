@@ -1,0 +1,11 @@
+# Papers Radar — replace the static-placeholder site block with this.
+# Caddy handles TLS automatically for both hosts.
+
+papersradar.com {
+	encode gzip
+	reverse_proxy 127.0.0.1:8000
+}
+
+www.papersradar.com {
+	redir https://papersradar.com{uri} permanent
+}

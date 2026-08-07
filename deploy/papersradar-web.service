@@ -1,0 +1,19 @@
+[Unit]
+Description=Papers Radar web app (uvicorn, single worker)
+After=network.target
+
+[Service]
+Type=simple
+User=papersradar
+Group=papersradar
+WorkingDirectory=/srv/papersradar/app
+Environment=ENV_FILE=/srv/papersradar/.env
+ExecStart=/srv/papersradar/venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 1
+Restart=on-failure
+RestartSec=5
+# 1 GB box: keep the web app well inside budget
+MemoryMax=300M
+Nice=0
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,10 @@
+[Unit]
+Description=Run the Papers Radar pipeline every morning
+
+[Timer]
+# 11:57 UTC = 04:57 PT (mirrors the old system's schedule)
+OnCalendar=*-*-* 11:57:00 UTC
+Persistent=true
+
+[Install]
+WantedBy=timers.target

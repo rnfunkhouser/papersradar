@@ -1,0 +1,14 @@
+[Unit]
+Description=Papers Radar daily pipeline (gather -> embed -> judge -> briefings)
+After=network.target
+
+[Service]
+Type=oneshot
+User=papersradar
+Group=papersradar
+WorkingDirectory=/srv/papersradar/app
+Environment=ENV_FILE=/srv/papersradar/.env
+# nice'd + sequential: the 1 GB box shares RAM with the web app
+ExecStart=/usr/bin/nice -n 10 /srv/papersradar/venv/bin/python3 -m pipeline.run_daily all
+MemoryMax=500M
+TimeoutStartSec=4h
