@@ -1,0 +1,91 @@
+{# Zotero linking widget — included by onboarding step 3 and settings.
+   Expects: zotero (row or None), zotero_collections, zotero_preview, znext #}
+<div class="panel" id="zotero">
+  <h3 style="margin-bottom:4px">Link your Zotero library</h3>
+  <p class="hint" style="margin-bottom:10px">The power-user option —
+    <strong>recommended if you have 20+ relevant papers saved</strong>. We import your
+    saved papers as seeds in one go. Pasting DOIs above stays the simplest path.</p>
+
+  {% if not zotero %}
+    <form method="post" action="/zotero/connect">
+      <input type="hidden" name="next" value="{{ znext }}">
+      <label>Library type</label>
+      <select name="library_type">
+        <option value="user">My personal library</option>
+        <option value="group">A group library</option>
+      </select>
+      <label>Library ID</label>
+      <input type="text" name="library_id" placeholder="e.g. 1234567" required>
+      <label>Zotero API key (read-only)</label>
+      <input type="text" name="api_key" autocomplete="off"
+             placeholder="paste your read-only key">
+      <div class="field-note">
+        <strong>Where do I find these?</strong> On zotero.org, open
+        <em>Settings&nbsp;→&nbsp;Security</em>. Your personal <em>library ID</em>
+        ("userID") is shown in the Applications section there. Then click
+        <em>"Create new private key"</em>, tick <em>read-only</em> access, and paste the
+        key here. For a <em>group</em> library, the ID is the number in the group's URL
+        (zotero.org/groups/&lt;ID&gt;); a public group needs no key at all. We only ever
+        read your library — the key is stored encrypted and never shown again.
+      </div>
+      <button class="btn" type="submit" style="margin-top:12px">Connect Zotero</button>
+    </form>
+
+  {% else %}
+    <p style="font-size:14.5px">
+      Connected to <strong>{{ zotero.library_type }} library {{ zotero.library_id }}</strong>
+      {% if zotero.last_sync_at %} · last import {{ zotero.last_sync_at[:16].replace('T', ' ') }}{% endif %}
+    </p>
+    <form method="post" action="/zotero/preview" style="margin-top:8px">
+      <input type="hidden" name="next" value="{{ znext }}">
+      <label>What should we import?</label>
+      <select name="collection_key">
+        <option value="" {% if not zotero.collection_key %}selected{% endif %}>Entire library</option>
+        {% for c in zotero_collections %}
+          <option value="{{ c.key }}" {% if zotero.collection_key == c.key %}selected{% endif %}>
+            Collection: {{ c.name }}</option>
+        {% endfor %}
+      </select>
+      <button class="btn btn-ghost" type="submit" style="margin-top:10px">Preview import</button>
+    </form>
+
+    {% if zotero_preview %}
+      <div class="field-note" style="margin-top:14px">
+        <strong>Preview:</strong> {{ zotero_preview.scholarly }} scholarly items found
+        ({{ zotero_preview.total_items }} total) —
+        <strong>{{ zotero_preview.new }} new to import</strong>
+        ({{ zotero_preview.with_doi }} with a DOI,
+        {{ zotero_preview.needs_title_match }} matched by title;
+        {{ zotero_preview.already_imported }} imported previously).
+      </div>
+      {% if zotero_preview.sample %}
+        <div style="margin:8px 0">
+          {% for s in zotero_preview.sample %}
+            <div class="seed-row"><span class="t">{{ s.title }}</span>
+              <span class="v">{{ 'DOI' if s.has_doi else 'title match' }}</span></div>
+          {% endfor %}
+          {% if zotero_preview.new > zotero_preview.sample|length %}
+            <div class="hint">…and {{ zotero_preview.new - zotero_preview.sample|length }} more.</div>
+          {% endif %}
+        </div>
+      {% endif %}
+      {% if zotero_preview.new %}
+        <form method="post" action="/zotero/import" style="display:inline">
+          <input type="hidden" name="next" value="{{ znext }}">
+          <button class="btn" type="submit">Import {{ zotero_preview.new }} paper{{ 's' if zotero_preview.new != 1 }}</button>
+        </form>
+      {% endif %}
+    {% endif %}
+
+    <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
+      <form method="post" action="/zotero/resync">
+        <input type="hidden" name="next" value="{{ znext }}">
+        <button class="btn btn-ghost" type="submit">Refresh seeds from Zotero</button>
+      </form>
+      <form method="post" action="/zotero/disconnect">
+        <input type="hidden" name="next" value="{{ znext }}">
+        <button class="btn btn-ghost" type="submit">Disconnect</button>
+      </form>
+    </div>
+  {% endif %}
+</div>

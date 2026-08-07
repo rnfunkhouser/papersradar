@@ -56,6 +56,22 @@ Each step explains itself in plain language for a non-technical academic:
    looked up on OpenAlex and shown back (title/venue/year) for confirm/remove.
    Explained: "Seeds steer the *Gathering* stage — we search the areas your
    seeds live in and shortlist new papers that sit close to them."
+   **Or link a Zotero library** (the power-user option, hinted as "recommended
+   if you have 20+ relevant papers saved"): the user supplies their library ID
+   and a READ-ONLY Zotero API key (plain-language help: zotero.org → Settings
+   → Security → "Create new private key", tick read-only; the library ID is on
+   the same Security page for personal libraries, or in the group URL). After
+   connecting they pick a collection (or "entire library"), see a preview of
+   what would be imported (counts + sample titles, DOI vs needs-title-match),
+   and confirm. The import logic is ported from the single-user
+   `harvest.sync_zotero()`: scholarly item types only, DOI from the record or
+   the `extra` field, no-DOI items title-resolved against OpenAlex with a
+   close-match guard, and an append-only per-user ledger (`{dois, keys}`) so
+   re-sync is idempotent and a seed the user deleted is never re-added.
+   Credentials live in `zotero_links` with the API key encrypted at rest
+   (HMAC-SHA256 keystream keyed off APP_SECRET) and are NEVER rendered back
+   to the browser; settings offers "refresh from Zotero" and disconnect
+   (disconnect keeps imported seeds).
 4. **Review & finish** — shows the drafted setup; explains the two stages
    (Gathering casts the net from your seeds; Selection is an AI judge reading
    every shortlisted abstract against your criteria and scoring fit 0–10 with
@@ -107,7 +123,12 @@ profiles         user_id UNIQUE, version, profile_json, updated_at
                  -- {core_statement, flavors[], fit_rule, negatives[],
                  --  positive_exemplar_titles[], negative_exemplar_titles[],
                  --  retrieval_concepts[]}
-seeds            id, user_id, doi, openalex_id, title, abstract, added_at, source
+seeds            id, user_id, doi, openalex_id, title, abstract, added_at,
+                 source('onboarding'|'settings'|'zotero'|'import')
+zotero_links     user_id UNIQUE, library_type('user'|'group'), library_id,
+                 collection_key(''=whole library), api_key_enc (encrypted at rest,
+                 never sent to the browser), connected_at, last_sync_at,
+                 ledger_json({dois,keys} append-only sync ledger)
 seed_embeddings  seed_id, embedder, dim, vector BLOB   UNIQUE(seed_id, embedder)
 papers           id, key UNIQUE (doi-lower or normalized-title), doi, title, venue,
                  authors_json, pub_date, created_date, type, abstract, oa_url,

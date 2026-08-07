@@ -28,6 +28,7 @@ _DEFAULTS = {
     "SMTP_FROM": "Papers Radar <no-reply@papersradar.com>",
     "OPENALEX_MAILTO": "admin@papersradar.com",
     "OPENALEX_BASE": "https://api.openalex.org",
+    "ZOTERO_BASE": "https://api.zotero.org",
     "JUDGE_SHORTLIST_PER_USER": "40",
     "BRIEFING_MIN_FIT": "6",
     "BRIEFING_MAX_ITEMS": "8",

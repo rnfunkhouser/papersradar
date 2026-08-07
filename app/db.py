@@ -139,6 +139,16 @@ CREATE TABLE IF NOT EXISTS pipeline_runs (
     status      TEXT DEFAULT 'running',        -- running | ok | error
     detail      TEXT DEFAULT ''
 );
+CREATE TABLE IF NOT EXISTS zotero_links (
+    user_id     INTEGER PRIMARY KEY REFERENCES users(id),
+    library_type TEXT NOT NULL,               -- user | group
+    library_id  TEXT NOT NULL,
+    collection_key TEXT DEFAULT '',           -- '' = entire library
+    api_key_enc TEXT DEFAULT '',              -- encrypted at rest; NEVER sent to browser
+    connected_at TEXT NOT NULL,
+    last_sync_at TEXT,
+    ledger_json TEXT DEFAULT '{}'             -- {dois: [], keys: []} append-only sync ledger
+);
 -- RESERVED for per-user inbound email (Scholar alert forwarding) — nothing
 -- writes this yet; see DESIGN.md §7.
 CREATE TABLE IF NOT EXISTS email_ingest (

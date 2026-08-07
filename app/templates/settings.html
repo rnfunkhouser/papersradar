@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Settings — Papers Radar{% endblock %}
+{% block content %}
+<div class="wrap-narrow">
+  <h1 class="page-title">Settings</h1>
+  {% if notice %}<div class="notice">{{ notice }}</div>{% endif %}
+  {% if error %}<div class="error">{{ error }}</div>{% endif %}
+
+  <div class="panel">
+    <h3>Account</h3>
+    <form method="post" action="/settings/account">
+      <label>Name</label>
+      <input type="text" name="name" value="{{ user.name }}">
+      <label>Briefing emails</label>
+      <select name="frequency">
+        <option value="daily" {% if user.frequency == 'daily' %}selected{% endif %}>Daily (each morning)</option>
+        <option value="weekly" {% if user.frequency == 'weekly' %}selected{% endif %}>Weekly (Mondays)</option>
+        <option value="none" {% if user.frequency == 'none' %}selected{% endif %}>Dashboard only</option>
+      </select>
+      <button class="btn" type="submit" style="margin-top:14px">Save account</button>
+    </form>
+  </div>
+
+  <div class="panel">
+    <h3>Selection Criteria</h3>
+    <p class="hint">This is exactly what the AI judge reads. Editing anything here
+      re-judges the current window of papers against the new wording on the next run.
+      <a href="/about-scores">How scoring works</a>.</p>
+    <form method="post" action="/settings/criteria">
+      <label>Core statement — your interests, in your own words</label>
+      <textarea name="core_statement" rows="6">{{ prof.core_statement or user.interest_statement }}</textarea>
+      <label>Flavors — one per line, format <code>key: description</code></label>
+      <textarea name="flavors" rows="6" placeholder="narrative_persuasion: Narrative as a persuasion mechanism, in any domain ...">{{ flavors_text }}</textarea>
+      <p class="hint">Each flavor is a named sub-interest; a paper squarely inside one
+        flavor is a bullseye. 2–6 flavors work best.</p>
+      <label>Fit rule (optional fine print for the judge)</label>
+      <textarea name="fit_rule" rows="3">{{ prof.fit_rule or '' }}</textarea>
+      <label>Explicitly NOT of interest — one per line</label>
+      <textarea name="negatives" rows="4" placeholder="Papers about X where Y is missing ...">{{ negatives_text }}</textarea>
+      <button class="btn" type="submit" style="margin-top:14px">Save criteria</button>
+    </form>
+  </div>
+
+  <div class="panel">
+    <h3>Seed papers ({{ seeds|length }})</h3>
+    <p class="hint">Seeds steer Gathering — the daily search covers the research areas
+      your seeds live in. Add papers you wish you'd been alerted to.</p>
+    <form method="post" action="/settings/seeds/add">
+      <label>Add seeds — DOIs or titles, one per line</label>
+      <textarea name="papers" rows="3"></textarea>
+      <button class="btn" type="submit" style="margin-top:10px">Look up &amp; add</button>
+    </form>
+    {% if seeds %}
+      <div style="margin-top:14px;max-height:340px;overflow-y:auto">
+      {% for s in seeds %}
+        <div class="seed-row">
+          <span class="t">{{ s.title }}</span>
+          <span class="v">{{ s.doi or 'no DOI' }}{% if s.source == 'zotero' %} · zotero{% endif %}</span>
+          <form method="post" action="/onboarding/seeds/remove" style="display:inline">
+            <input type="hidden" name="seed_id" value="{{ s.id }}">
+            <input type="hidden" name="next" value="/settings">
+            <button type="submit" title="Remove">&#10005;</button>
+          </form>
+        </div>
+      {% endfor %}
+      </div>
+    {% endif %}
+  </div>
+
+  {% include "zotero_widget.html" %}
+</div>
+{% endblock %}

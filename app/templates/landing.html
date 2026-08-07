@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}Papers Radar — your daily research radar{% endblock %}
+{% block content %}
+
+<section class="hero">
+  <span class="eyebrow">For researchers, by researchers</span>
+  <h1>Your daily <span class="grad">research radar</span>.<br>Never miss the paper that matters.</h1>
+  <p class="sub">Papers Radar scans tens of thousands of new publications and preprints
+    every morning and hand-delivers the handful that actually fit <em>your</em> research —
+    each with a plain-English rationale you can check.</p>
+  <div class="hero-cta">
+    <a class="btn btn-lg" href="/login">Start your radar — it's free</a>
+    <a class="btn btn-lg btn-ghost" href="#how">See how it works</a>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <h2>Built for how academics actually read</h2>
+    <p class="lead">Keyword alerts drown you; tables of contents arrive months late.
+      Papers Radar reads like a sharp colleague who knows exactly what you care about.</p>
+    <div class="grid3">
+      <div class="feature">
+        <div class="icon">&#127757;</div>
+        <h3>Field-agnostic coverage</h3>
+        <p>OpenAlex, arXiv, SocArXiv and PsyArXiv — journals and preprints across every
+          discipline, gathered daily from the areas your own seed papers live in.</p>
+      </div>
+      <div class="feature">
+        <div class="icon">&#128269;</div>
+        <h3>Transparent AI rationales</h3>
+        <p>An AI judge reads every shortlisted abstract against criteria <em>you</em> can
+          read and edit, then scores fit 0–10 with a one-sentence reason. No black-box
+          ranking — you always see the why.</p>
+      </div>
+      <div class="feature">
+        <div class="icon">&#127919;</div>
+        <h3>Gets sharper as you use it</h3>
+        <p>Thumbs-up and thumbs-down on any pick become boundary examples the judge
+          learns from the very next day. Your radar tunes itself to your taste.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="how">
+  <div class="wrap">
+    <h2>How it works</h2>
+    <p class="lead">Two stages, both inspectable: <strong>Gathering</strong> casts the
+      net, <strong>Selection</strong> decides what deserves your attention.</p>
+    <div class="steps">
+      <div class="step">
+        <h3>Tell us what you work on</h3>
+        <p>Describe your interests in your own words and paste a few papers you wish
+          you'd been alerted to. That's your whole setup — about five minutes.</p>
+      </div>
+      <div class="step">
+        <h3>We gather &amp; shortlist daily</h3>
+        <p>Every morning we search the research areas your seed papers point to and
+          shortlist new work that sits closest to them — semantic closeness, not
+          keyword roulette.</p>
+      </div>
+      <div class="step">
+        <h3>An AI judge picks your briefing</h3>
+        <p>The judge reads each shortlisted abstract against your Selection Criteria
+          and scores its fit. The best land in your inbox and dashboard, rationale
+          attached.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <div class="quote">
+      <blockquote>&ldquo;It found a preprint squarely in my niche the week it went up —
+        months before I'd have seen it in a journal alert. The one-line rationales mean
+        I trust what it skips, too.&rdquo;</blockquote>
+      <div class="who">Early pilot user · political communication faculty</div>
+    </div>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="cta-band">
+    <h2>Five minutes to set up. Every morning after, it works for you.</h2>
+    <p>No passwords, no installs — sign in with a magic link and start your radar.</p>
+    <a class="btn btn-lg" href="/login">Get started free</a>
+  </div>
+</section>
+
+{% endblock %}

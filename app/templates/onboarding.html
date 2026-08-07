@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}Set up your radar — Papers Radar{% endblock %}
+{% block content %}
+<div class="wrap-narrow">
+  <h1 class="page-title">Set up your radar</h1>
+  <div class="progress">
+    {% for i in [1, 2, 3, 4] %}<span class="{{ 'done' if step >= i }}"></span>{% endfor %}
+  </div>
+  <div class="step-label">Step {{ step }} of 4 ·
+    {{ ["About you", "Your interests", "Seed papers", "Review & launch"][step - 1] }}</div>
+
+  {% if notice %}<div class="notice">{{ notice }}</div>{% endif %}
+  {% if error %}<div class="error">{{ error }}</div>{% endif %}
+
+  {% if step == 1 %}
+  <div class="panel">
+    <h3>Welcome! First, the basics.</h3>
+    <form method="post" action="/onboarding/about">
+      <label>Your name</label>
+      <input type="text" name="name" value="{{ user.name }}" placeholder="Dr. Ada Lovelace" required>
+      <label>How often should we email your briefing?</label>
+      <select name="frequency">
+        <option value="daily" {% if user.frequency == 'daily' %}selected{% endif %}>Daily (each morning)</option>
+        <option value="weekly" {% if user.frequency == 'weekly' %}selected{% endif %}>Weekly (Mondays)</option>
+        <option value="none" {% if user.frequency == 'none' %}selected{% endif %}>Don't email me — I'll use the dashboard</option>
+      </select>
+      <p class="hint">You can change this any time in Settings.</p>
+      <button class="btn" type="submit" style="margin-top:14px">Continue</button>
+    </form>
+  </div>
+
+  {% elif step == 2 %}
+  <div class="panel">
+    <h3>Describe your research interests — in your own words</h3>
+    <div class="field-note">
+      <strong>Why this matters:</strong> this paragraph becomes the core of your
+      <em>Selection Criteria</em> — the instructions an AI reader (we call it the
+      <em>judge</em>) uses to score every candidate paper's fit for you, 0–10, with a
+      one-sentence rationale. Write it like you'd brief a sharp new PhD student:
+      what you work on, what a great find looks like, and what only <em>sounds</em>
+      related but isn't. You can edit every word of it later.
+    </div>
+    <form method="post" action="/onboarding/interests">
+      <label>Your interests</label>
+      <textarea name="statement" rows="7" placeholder="I study how ... I'm especially interested in ... Papers about X in general are background noise; what I care about is ...">{{ user.interest_statement }}</textarea>
+      <button class="btn" type="submit" style="margin-top:14px">Continue</button>
+    </form>
+  </div>
+
+  {% elif step == 3 %}
+  <div class="panel">
+    <h3>Add seed papers</h3>
+    <div class="field-note">
+      <strong>What seeds do:</strong> seeds steer the <em>Gathering</em> stage — every
+      morning we search the research areas your seed papers live in and shortlist new
+      work that sits semantically close to them. Aim for {{ min_seeds }}–100 papers you
+      wish you'd been alerted to when they came out. More seeds = a better-aimed net.
+    </div>
+    <form method="post" action="/onboarding/seeds">
+      <label>Paste DOIs or titles — one per line</label>
+      <textarea name="papers" rows="5" placeholder="10.1038/s41586-024-01234-5
+The title of a paper also works"></textarea>
+      <p class="hint">We look each one up on OpenAlex and show you what we found —
+        remove anything that isn't right.</p>
+      <button class="btn" type="submit" style="margin-top:12px">Look up &amp; add</button>
+    </form>
+
+    {% if seeds %}
+      <h3 style="margin-top:22px">Your seeds ({{ seeds|length }})</h3>
+      {% for s in seeds %}
+        <div class="seed-row">
+          <span class="t">{{ s.title }}</span>
+          <span class="v">{{ s.doi or 'no DOI' }}</span>
+          <form method="post" action="/onboarding/seeds/remove" style="display:inline">
+            <input type="hidden" name="seed_id" value="{{ s.id }}">
+            <input type="hidden" name="next" value="/onboarding?step=3">
+            <button type="submit" title="Remove">&#10005;</button>
+          </form>
+        </div>
+      {% endfor %}
+    {% endif %}
+  </div>
+
+  {% include "zotero_widget.html" %}
+
+  <div style="display:flex;justify-content:space-between;margin:18px 0">
+    <a class="btn btn-ghost" href="/onboarding?step=2">Back</a>
+    {% if seeds|length >= min_seeds %}
+      <a class="btn" href="/onboarding?step=4">Continue</a>
+    {% else %}
+      <span class="hint" style="align-self:center">Add at least {{ min_seeds }} seeds to continue
+        ({{ seeds|length }} so far)</span>
+    {% endif %}
+  </div>
+
+  {% elif step == 4 %}
+  <div class="panel">
+    <h3>How your radar will work</h3>
+    <p style="margin:10px 0">Two stages, every morning:</p>
+    <p style="margin:8px 0"><strong>1 · Gathering</strong> casts the net: we search
+      OpenAlex, arXiv, SocArXiv and PsyArXiv in the research areas learned from your
+      <strong>{{ seeds|length }} seed papers</strong>, and shortlist the new papers
+      that sit closest to them.</p>
+    <p style="margin:8px 0"><strong>2 · Selection</strong> decides: an AI judge reads
+      each shortlisted abstract against your Selection Criteria and scores its
+      <strong>fit</strong> from 0–10 with a one-sentence rationale. It also tags which of
+      your <strong>flavors</strong> — named sub-interests we draft from your description,
+      editable in Settings — each paper engages. Only the best make your briefing.</p>
+    <p style="margin:8px 0"><strong>You stay in charge:</strong> thumbs-up/down any pick
+      and the judge treats it as a boundary example the very next day. Edit your
+      criteria any time — every scoring rule is plain English you can read.</p>
+  </div>
+  <div style="display:flex;justify-content:space-between;margin:18px 0">
+    <a class="btn btn-ghost" href="/onboarding?step=3">Back</a>
+    <form method="post" action="/onboarding/finish">
+      <button class="btn btn-lg" type="submit">Launch my radar</button>
+    </form>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

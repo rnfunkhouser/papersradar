@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Papers Radar{% endblock %}
+{% block content %}
+<div class="wrap" style="max-width:820px">
+  <h1 class="page-title">Your briefing</h1>
+  {% if sel_date %}
+    <p class="page-sub">{{ sel_date }} · {{ cards|length }} pick{{ 's' if cards|length != 1 }} ·
+      <a href="/about-scores">how these scores work</a></p>
+    <div class="datebar">
+      {% for d in dates[:14] %}
+        {% if d == sel_date %}<span class="cur">{{ d }}</span>
+        {% else %}<a href="/dashboard?date={{ d }}">{{ d }}</a>{% endif %}
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% for c in cards %}
+  <div class="card" data-paper="{{ c.id }}" data-vote="{{ c.vote }}">
+    <h2><a href="/out/{{ c.id }}" target="_blank" rel="noopener">{{ c.title }}</a></h2>
+    <div class="meta">{{ c.authors }}{% if c.venue %} · <em>{{ c.venue }}</em>{% endif %}
+      {% if c.date %} · {{ c.date }}{% endif %}</div>
+    <span class="chip" title="An AI judge read this abstract against your Selection Criteria and scored its fit for you, 0–10. The tags are the interest flavors it engages.">
+      <a href="/about-scores">{{ '%g' % c.fit }}/10{% if c.flavors %} · {{ c.flavors|join(', ') }}{% endif %}</a>
+    </span>
+    {% if c.why %}<div class="why">&ldquo;{{ c.why }}&rdquo;</div>{% endif %}
+    {% if c.abstract %}
+      <details><summary>Abstract</summary>
+        <div class="abstract">{{ c.abstract }}</div>
+      </details>
+    {% endif %}
+    <div class="card-foot">
+      <button class="vote up {{ 'on' if c.vote == 'up' }}" title="More like this">&#128077;</button>
+      <button class="vote down {{ 'on' if c.vote == 'down' }}" title="Fewer like this">&#128078;</button>
+      <span class="vote-note">Votes teach the judge — they become boundary examples tomorrow.</span>
+    </div>
+  </div>
+  {% endfor %}
+
+  {% if not cards %}
+    <div class="empty">
+      <div class="big">&#128225;</div>
+      {% if not profile_ready %}
+        <h2>Your radar is warming up</h2>
+        <p>Your {{ n_seeds }} seed papers are in. The next pipeline run (each morning)
+          finishes your profile, gathers candidates, and scores them — your first
+          briefing appears here after that.</p>
+      {% else %}
+        <h2>No briefing yet{% if dates %} for this day{% endif %}</h2>
+        <p>Quiet days happen — when nothing clears your fit bar, we'd rather show you
+          nothing than noise. Check back tomorrow, or broaden your
+          <a href="/settings">Selection Criteria</a>.</p>
+      {% endif %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

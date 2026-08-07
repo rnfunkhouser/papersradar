@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Check your email — Papers Radar{% endblock %}
+{% block content %}
+<div class="wrap-narrow">
+  <div class="empty" style="margin-top:48px">
+    <div class="big">&#128231;</div>
+    {% if sent %}
+      <h2>Check your inbox</h2>
+      <p>We sent a sign-in link to <strong>{{ email }}</strong>. It works once and
+        expires in 20 minutes. (No email? Check spam, then try again.)</p>
+    {% else %}
+      <h2>Link created</h2>
+      <p>This server is running without outgoing email (development mode). Your
+        sign-in link for <strong>{{ email }}</strong> has been written to the server
+        log and the admin's <code>/admin/dev-links</code> page — ask the site owner
+        to pass it along.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

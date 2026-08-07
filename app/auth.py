@@ -84,6 +84,43 @@ def redeem_token(con, token: str) -> str | None:
 
 # --- sessions ----------------------------------------------------------------
 
+# --- secret-at-rest encryption ----------------------------------------------
+# HMAC-SHA256 keystream (CTR construction) keyed off APP_SECRET — stdlib-only
+# encryption for stored third-party API keys (e.g. Zotero). Format:
+# base64(nonce[16] || ciphertext). Decrypted values are used server-side only
+# and never rendered back to the browser.
+
+def _keystream(nonce: bytes, length: int) -> bytes:
+    secret = cfg("APP_SECRET").encode()
+    out = b""
+    counter = 0
+    while len(out) < length:
+        out += hmac.new(secret, nonce + counter.to_bytes(8, "big"),
+                        hashlib.sha256).digest()
+        counter += 1
+    return out[:length]
+
+
+def encrypt_secret(plaintext: str) -> str:
+    if not plaintext:
+        return ""
+    nonce = secrets.token_bytes(16)
+    data = plaintext.encode()
+    ct = bytes(a ^ b for a, b in zip(data, _keystream(nonce, len(data))))
+    return base64.b64encode(nonce + ct).decode()
+
+
+def decrypt_secret(blob: str) -> str:
+    if not blob:
+        return ""
+    try:
+        raw = base64.b64decode(blob)
+        nonce, ct = raw[:16], raw[16:]
+        return bytes(a ^ b for a, b in zip(ct, _keystream(nonce, len(ct)))).decode()
+    except Exception:
+        return ""
+
+
 def _sign(payload: str) -> str:
     secret = cfg("APP_SECRET")
     if not secret:

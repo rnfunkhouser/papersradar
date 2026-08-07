@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}How the scores work — Papers Radar{% endblock %}
+{% block content %}
+<div class="wrap-narrow">
+  <h1 class="page-title">How your papers are chosen &amp; scored</h1>
+  <p class="page-sub">Everything here is inspectable — no black boxes.</p>
+
+  <div class="panel">
+    <h3>Stage 1 · Gathering</h3>
+    <p>Every morning we pull the newest papers and preprints from
+      <strong>OpenAlex</strong> (which indexes most scholarly journals),
+      <strong>arXiv</strong>, <strong>SocArXiv</strong> and <strong>PsyArXiv</strong> —
+      searching the research areas learned from <em>your seed papers</em>. Each
+      candidate is then compared to your seeds by <em>semantic closeness</em>
+      (meaning, not keywords), and the closest form your daily shortlist.</p>
+  </div>
+
+  <div class="panel">
+    <h3>Stage 2 · Selection — the judge</h3>
+    <p>An AI reader (a large language model) reads every shortlisted title and
+      abstract against your <strong>Selection Criteria</strong> — the plain-English
+      description you wrote, plus your flavors, exclusions, and example papers —
+      and scores <strong>fit</strong> for you:</p>
+    <p style="margin:10px 0 0">
+      <span class="chip">9–10</span> squarely inside one of your flavors — the flavor
+        <em>is</em> the paper's central question<br>
+      <span class="chip">7–8</span> clearly within a flavor, sharing the stage with other aims<br>
+      <span class="chip">4–6</span> competent on one component (your topic area alone) without the combination<br>
+      <span class="chip">1–3</span> tangential — shares vocabulary, not the research space<br>
+      <span class="chip">0</span> off-target or on your not-interested list</p>
+    <p style="margin-top:10px">Every score comes with a one-sentence rationale — that's
+      the quoted line on each card. If the rationale is wrong, that's your cue to edit
+      your criteria.</p>
+  </div>
+
+  <div class="panel">
+    <h3>What are "flavors"?</h3>
+    <p>Named sub-interests — each one an <em>intersection</em> of things you care about
+      (e.g. "narrative_persuasion: narrative as a persuasion mechanism, in any
+      domain..."). A paper squarely inside <em>one</em> flavor is a bullseye; it doesn't
+      need to touch all of them. The tags on each card's chip show which flavors the
+      judge thinks a paper engages. Edit them in
+      <a href="/settings">Settings → Selection Criteria</a>.</p>
+  </div>
+
+  <div class="panel">
+    <h3>Your feedback is part of the system</h3>
+    <p>Thumbs-up and thumbs-down on any card become <em>boundary examples</em> shown to
+      the judge from the next run onward — "papers the researcher liked / rejected".
+      A few votes on borderline cases sharpen your radar noticeably. Clicking through
+      to a paper is also recorded so we can evaluate how useful your briefings are.</p>
+  </div>
+</div>
+{% endblock %}

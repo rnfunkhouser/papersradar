@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Admin — Papers Radar{% endblock %}
+{% block content %}
+<div class="wrap">
+  <h1 class="page-title">Admin</h1>
+  <p class="page-sub">{{ n_papers }} papers in the corpus · {{ n_vectors }} embedded
+    {% if dev_mode %} · <strong>DEV MODE (no SMTP)</strong> —
+      <a href="/admin/dev-links">login links</a>{% endif %}</p>
+
+  <div class="panel">
+    <h3>Users</h3>
+    <div class="tablewrap"><table>
+      <tr><th>id</th><th>email</th><th>name</th><th>freq</th><th>seeds</th>
+          <th>judged</th><th>last briefing</th><th>onboarded</th><th>admin</th></tr>
+      {% for u in users %}
+      <tr><td>{{ u.id }}</td><td>{{ u.email }}</td><td>{{ u.name }}</td>
+          <td>{{ u.frequency }}</td><td>{{ u.n_seeds }}</td><td>{{ u.n_judged }}</td>
+          <td>{{ u.last_briefing or '—' }}</td>
+          <td>{{ (u.onboarded_at or '')[:10] or '—' }}</td>
+          <td>{{ '✓' if u.is_admin }}</td></tr>
+      {% endfor %}
+    </table></div>
+  </div>
+
+  <div class="panel">
+    <h3>Provider quota — today</h3>
+    <div class="tablewrap"><table>
+      <tr><th>provider</th><th>ok</th><th>errors</th><th>daily cap</th><th>last</th></tr>
+      {% for p in usage %}
+      <tr><td>{{ p.provider }}</td><td>{{ p.ok_count }}</td><td>{{ p.err_count }}</td>
+          <td>{{ caps.get(p.provider, '—') }}</td>
+          <td>{{ p.last_ts[11:16] }} · {{ p.last_detail[:60] }}</td></tr>
+      {% endfor %}
+      {% if not usage %}<tr><td colspan="5">No provider calls yet today.</td></tr>{% endif %}
+    </table></div>
+  </div>
+
+  <div class="panel">
+    <h3>Pipeline runs</h3>
+    <div class="tablewrap"><table>
+      <tr><th>id</th><th>stage</th><th>started</th><th>finished</th><th>status</th><th>detail</th></tr>
+      {% for r in runs %}
+      <tr><td>{{ r.id }}</td><td>{{ r.stage }}</td>
+          <td>{{ r.started_at[5:16].replace('T', ' ') }}</td>
+          <td>{{ (r.finished_at or '')[5:16].replace('T', ' ') or '—' }}</td>
+          <td class="status-{{ r.status }}">{{ r.status }}</td>
+          <td style="max-width:380px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.detail }}</td></tr>
+      {% endfor %}
+      {% if not runs %}<tr><td colspan="6">No pipeline runs yet.</td></tr>{% endif %}
+    </table></div>
+  </div>
+
+  {% if errors %}
+  <div class="panel">
+    <h3>Recent errors</h3>
+    <div class="tablewrap"><table>
+      <tr><th>when</th><th>stage</th><th>detail</th></tr>
+      {% for e in errors %}
+      <tr><td>{{ e.started_at[5:16].replace('T', ' ') }}</td><td>{{ e.stage }}</td>
+          <td>{{ e.detail[:200] }}</td></tr>
+      {% endfor %}
+    </table></div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

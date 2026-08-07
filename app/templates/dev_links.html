@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Dev login links — Papers Radar{% endblock %}
+{% block content %}
+<div class="wrap">
+  <h1 class="page-title">Dev-mode login links</h1>
+  <p class="page-sub">{% if dev_mode %}SMTP is not configured, so magic links are not
+    emailed — pending links appear here (and in the server log) instead. Pass them to
+    the requesting user through a trusted channel.{% else %}SMTP is configured — links
+    are emailed; nothing should appear here.{% endif %}</p>
+  <div class="panel">
+    <div class="tablewrap"><table>
+      <tr><th>email</th><th>link</th><th>created</th><th>expires</th></tr>
+      {% for l in links %}
+      <tr><td>{{ l.email }}</td>
+          <td><code>{{ l.dev_link }}</code></td>
+          <td>{{ l.created_at[11:16] }}</td><td>{{ l.expires_at[11:16] }}</td></tr>
+      {% endfor %}
+      {% if not links %}<tr><td colspan="4">No pending links.</td></tr>{% endif %}
+    </table></div>
+  </div>
+</div>
+{% endblock %}
