@@ -100,7 +100,8 @@ def harvest_openalex(concepts: list[str], since: str,
 def harvest_arxiv(since: str) -> list[dict]:
     import urllib.request
     cat_q = "+OR+".join(f"cat:{c}" for c in ARXIV_CATS)
-    url = (f"https://export.arxiv.org/api/query?search_query=({cat_q})"
+    base = cfg("ARXIV_BASE", "https://export.arxiv.org").rstrip("/")
+    url = (f"{base}/api/query?search_query=({cat_q})"
            f"&start=0&max_results={ARXIV_MAX}&sortBy=submittedDate&sortOrder=descending")
     try:
         with urllib.request.urlopen(url, timeout=30) as r:
@@ -133,7 +134,8 @@ def harvest_osf(since: str) -> list[dict]:
     for prov in OSF_PROVIDERS:
         venue = {"socarxiv": "SocArXiv (preprint)",
                  "psyarxiv": "PsyArXiv (preprint)"}[prov]
-        url = ("https://api.osf.io/v2/preprints/?filter[provider]=" + prov
+        osf_base = cfg("OSF_BASE", "https://api.osf.io").rstrip("/")
+        url = (osf_base + "/v2/preprints/?filter[provider]=" + prov
                + "&filter[date_published][gte]=" + since
                + "&page[size]=100&sort=-date_published")
         pulled = 0

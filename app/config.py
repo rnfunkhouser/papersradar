@@ -29,6 +29,8 @@ _DEFAULTS = {
     "OPENALEX_MAILTO": "admin@papersradar.com",
     "OPENALEX_BASE": "https://api.openalex.org",
     "ZOTERO_BASE": "https://api.zotero.org",
+    "ARXIV_BASE": "https://export.arxiv.org",
+    "OSF_BASE": "https://api.osf.io",
     "JUDGE_SHORTLIST_PER_USER": "40",
     "BRIEFING_MIN_FIT": "6",
     "BRIEFING_MAX_ITEMS": "8",
