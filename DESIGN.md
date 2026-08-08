@@ -1,4 +1,7 @@
-# Papers Radar — design
+# Research Radar — design
+
+(Branded "Research Radar" in all user-facing surfaces since 2026-08; the
+domain, package, service names, and DB stay `papersradar`.)
 
 Multi-user hosted evolution of the single-user `new_papers_briefing` pipeline.
 Target: papersradar.com on a 1 GB Oracle Cloud VM (Ubuntu 24.04, Python 3.12,
@@ -45,23 +48,35 @@ placeholder is retired).
   login on a fresh install: `pipeline/import_owner.py` creates the admin, and
   the link also appears in the app log — documented in DEPLOY.md.
 
-### Onboarding wizard (`/onboarding`, steps 1–4, progress bar)
-Each step explains itself in plain language for a non-technical academic:
+### Onboarding wizard (`/onboarding`, steps 1–6, progress bar)
+Each step explains itself in plain language for a non-technical academic.
+Steps 2–4 are the STRUCTURED interest editor (2026-08): each carries a
+"Want to see a full example?" expander showing the founder's real profile
+(hardcoded in `app/founder_example.py`).
 1. **About you** — name, how often to email (daily / weekly / dashboard-only).
-2. **Your interests, in your own words** — a paragraph describing what they
-   work on and what a "great find" looks like. Explained: "This becomes the
-   core of your Selection Criteria — the instructions an AI reader uses to
-   score every paper's fit for you. You can edit it any time."
-3. **Seed papers** — paste DOIs or titles (3 minimum, ~10–100 ideal); each is
+2. **Describe your research** — a few sentences, "as you would to a sharp PhD
+   student outside your subfield" → the profile's `core_statement`.
+3. **Topics & intersections** — repeatable entries (short name + 1–3 sentence
+   description, star = core); guidance nudges specific theories/frameworks/
+   methods and explains that intersections beat broad topics → `flavors`
+   (keys slugified; starred entries get `core: true`, rendered "(CORE)" in
+   the judge prompt; `fit_rule` composed from a default intersections
+   template, +CORE sentence only when something is starred).
+4. **Not interested** — repeatable exclusion entries (optional) → `negatives`.
+   Structured entries live additively on users
+   (`interest_flavors_json` / `interest_negatives_json`, migrated on
+   connect); legacy users with only `interest_statement` keep the fallback +
+   LLM-drafted-flavors path.
+5. **Seed papers** — paste DOIs or titles (3 minimum, ~10–100 ideal); each is
    looked up on OpenAlex and shown back (title/venue/year) for confirm/remove.
    Explained: "Seeds steer the *Gathering* stage — we search the areas your
    seeds live in and shortlist new papers that sit close to them."
-   **Or link a Zotero library** (the power-user option, hinted as "recommended
-   if you have 20+ relevant papers saved"): the user supplies their library ID
-   and a READ-ONLY Zotero API key (plain-language help: zotero.org → Settings
-   → Security → "Create new private key", tick read-only; the library ID is on
-   the same Security page for personal libraries, or in the group URL). After
-   connecting they pick a collection (or "entire library"), see a preview of
+   **Or link a Zotero library** — the RECOMMENDED path is a dedicated
+   PUBLIC group library (create a free group, Public + Closed membership, add
+   just the seed papers, paste the group URL or ID — public groups need NO
+   API key, and users never hand over their whole personal library). The
+   private-library path (READ-ONLY API key, encrypted at rest) remains as a
+   clearly-secondary fallback. After connecting they pick a collection (or "entire library"), see a preview of
    what would be imported (counts + sample titles, DOI vs needs-title-match),
    and confirm. The import logic is ported from the single-user
    `harvest.sync_zotero()`: scholarly item types only, DOI from the record or
@@ -72,7 +87,7 @@ Each step explains itself in plain language for a non-technical academic:
    (HMAC-SHA256 keystream keyed off APP_SECRET) and are NEVER rendered back
    to the browser; settings offers "refresh from Zotero" and disconnect
    (disconnect keeps imported seeds).
-4. **Review & finish** — shows the drafted setup; explains the two stages
+6. **Review & finish** — shows the drafted setup; explains the two stages
    (Gathering casts the net from your seeds; Selection is an AI judge reading
    every shortlisted abstract against your criteria and scoring fit 0–10 with
    a one-sentence rationale) and what "flavors" are (named sub-interests the
@@ -94,9 +109,26 @@ the chip as well). Archive of past briefing days. Quiet-day state and
 "pipeline hasn't run yet" state.
 
 ### Settings (`/settings`)
-Edit name, email frequency; edit Selection Criteria (core statement, flavors,
-negatives — bumps profile version, which discards that user's judgment cache
-exactly like `judge.py`); add/remove seed papers (re-runs profile build).
+Edit name, email frequency; edit Selection Criteria with the SAME structured
+editor as onboarding (core statement, topic entries with core stars,
+exclusions, optional hand-written fit rule — bumps profile version, which
+discards that user's judgment cache exactly like `judge.py`); add/remove
+seed papers (re-runs profile build); DELETE ACCOUNT (type DELETE to confirm
+→ `db.delete_user_cascade` removes every per-user row, incl. hashed login
+tokens and the encrypted Zotero key; shared corpus papers stay).
+
+### Privacy & email surface
+`/privacy` states, verified against the code: what is stored (email,
+interest text, seeds, votes, clicks — one SQLite DB), hashed one-time login
+tokens, 30-day cookie sessions (surfaced on the login page and in a
+post-login notice), Zotero keys encrypted at rest and never re-displayed,
+titles/abstracts + interest text sent to Groq/Gemini/OpenRouter-Cerebras
+(nothing else personal), no third-party analytics, no selling/sharing, only
+chosen briefings + requested login links, self-serve deletion. Briefing
+emails carry a footer with manage (settings) and one-click unsubscribe
+links; `GET /unsubscribe/<uid.hmac>` (signed with APP_SECRET, no login,
+idempotent) sets frequency='none'. `SOURCE_URL` config gates "source code"
+links / open-source wording (hidden until the repo is public).
 
 ### Admin (`/admin`, `is_admin` users)
 User list (seeds/judgments/last-briefing counts), pipeline run history +

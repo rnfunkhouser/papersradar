@@ -29,7 +29,7 @@ tests/      pytest suite + e2e smoke — fully offline (stub OpenAlex/Zotero)
 python3 -m venv .venv && .venv/bin/pip install -r project_admin/requirements.txt
 cp .env.example .env          # set APP_SECRET at minimum
 .venv/bin/uvicorn app.main:app --reload      # http://127.0.0.1:8000
-.venv/bin/python -m pytest                   # 39 tests, no network
+.venv/bin/python -m pytest                   # 54 tests, no network
 ```
 
 With `SMTP_HOST` empty the app runs in dev mode: magic-link URLs are logged

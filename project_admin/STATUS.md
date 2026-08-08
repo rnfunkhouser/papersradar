@@ -29,3 +29,28 @@ Next (deploy-time, by Ryan):
 
 Deferred (designed, not built): per-user inbound email (email_ingest table
 reserved), local embedder swap, LLM prose summaries, feedback CSV export.
+
+## 2026-08-07 — Research Radar release (rebrand + privacy + structured onboarding)
+
+- Rebranded all user-facing surfaces to "Research Radar" (domain/package/
+  services/DB stay `papersradar`); landing copy shifted to researcher-built
+  tool tone, exact early-user testimonial, free-service emphasis; SOURCE_URL
+  config gates "source code" links + open-source wording (empty = hidden).
+- /privacy (claims verified against code) + inline data note on login/signup;
+  self-serve account deletion in Settings (type DELETE, full cascade).
+- Structured onboarding (6 steps): describe research / topics & intersections
+  (starrable, repeatable) / exclusions — each with the founder's real profile
+  as a "full example" expander (app/founder_example.py). structured_profile()
+  composes the judge contract (default intersections fit rule; starred
+  flavors rendered "(CORE)"); additive users columns migrate on connect;
+  legacy paragraph-only users keep the fallback path. Settings has the same
+  structured editor.
+- Zotero: recommended path is a keyless PUBLIC group library (paste group URL
+  or ID); private API-key path kept as secondary fallback.
+- 30-day sessions surfaced (login copy + post-login notice); briefing-email
+  footer with manage + signed one-click unsubscribe (GET /unsubscribe/<tok>,
+  no login, idempotent).
+- Tests: 54 passing, fully offline.
+- Deploy note: server .env SMTP_FROM display name should be updated to
+  "Research Radar <no-reply@papersradar.com>"; set SOURCE_URL when the public
+  repo exists.
