@@ -71,7 +71,17 @@ def test_finish_gate_and_profile_creation(client):
                 data={"statement": "I study how conversational AI persuades people "
                                    "and bridges ideological divides online."})
     r = client.post("/onboarding/finish")
-    assert r.status_code == 400                    # not enough seeds yet
+    assert r.status_code == 400                    # no topics, no seeds yet
+    r = client.post("/onboarding/flavors",
+                    data={"flavor_key": ["AI persuasion"],
+                          "flavor_desc": ["Conversational AI that shifts attitudes."],
+                          "flavor_core": ["1"]})
+    assert r.status_code == 303
+    r = client.post("/onboarding/negatives",
+                    data={"negative": ["Chatbot UX with no persuasion outcome"]})
+    assert r.status_code == 303
+    r = client.post("/onboarding/finish")
+    assert r.status_code == 400                    # still not enough seeds
     client.post("/onboarding/seeds",
                 data={"papers": "10.1000/alpha\n10.1000/beta\n10.1000/gamma"})
     r = client.post("/onboarding/finish")
@@ -81,8 +91,41 @@ def test_finish_gate_and_profile_creation(client):
     assert user["onboarded_at"]
     prof = appdb.get_profile(con, user["id"])
     assert prof["core_statement"].startswith("I study how conversational AI")
-    assert prof["flavors"], "fallback flavor must exist without any API"
+    assert prof["flavors"] == [{"key": "ai_persuasion", "core": True,
+                                "description": "Conversational AI that shifts "
+                                               "attitudes."}]
+    assert prof["negatives"] == ["Chatbot UX with no persuasion outcome"]
+    assert "bullseye" in prof["fit_rule"] and "CORE" in prof["fit_rule"]
     con.close()
     # dashboard renders the warming-up state
     r = client.get("/dashboard")
     assert r.status_code == 200 and "warming up" in r.text
+
+
+def test_flavors_step_requires_complete_entry(client):
+    login(client, "flav@example.com")
+    client.post("/onboarding/about", data={"name": "Dr G", "frequency": "daily"})
+    r = client.post("/onboarding/flavors",
+                    data={"flavor_key": ["name only"], "flavor_desc": [""],
+                          "flavor_core": ["0"]})
+    assert r.status_code == 400
+    # negatives may be skipped entirely (empty list is fine)
+    r = client.post("/onboarding/negatives", data={})
+    assert r.status_code == 303
+
+
+def test_onboarding_shows_founder_example(client):
+    login(client, "ex@example.com")
+    client.post("/onboarding/about", data={"name": "Dr E", "frequency": "daily"})
+    client.post("/onboarding/interests",
+                data={"statement": "I study collective attention and online "
+                                   "discourse dynamics at scale."})
+    r = client.get("/onboarding?step=2")
+    assert "Want to see a full example?" in r.text
+    assert "political-communication researcher" in r.text
+    r = client.get("/onboarding?step=3")
+    assert "Want to see a full example?" in r.text
+    assert "bridging divides" in r.text          # founder flavor key, prettified
+    r = client.get("/onboarding?step=4")
+    assert "Want to see a full example?" in r.text
+    assert "Public attitudes TOWARD AI" in r.text

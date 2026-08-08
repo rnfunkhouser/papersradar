@@ -29,7 +29,12 @@ def build_prompt(profile: dict, extra_pos=(), extra_neg=()) -> str:
     pos_s = "\n".join(f"- {t}" for t in pos)
     neg_s = "\n".join(f"- {t}" for t in neg_ex)
     if profile.get("flavors"):
-        areas = "\n".join(f"- {f['key']}: {f['description']}" for f in profile["flavors"])
+        # (CORE) marker only for flavors explicitly starred in the structured
+        # editor — profiles without core flags render byte-identically to the
+        # original judge.py contract.
+        areas = "\n".join(
+            f"- {f['key']}{' (CORE)' if f.get('core') else ''}: {f['description']}"
+            for f in profile["flavors"])
         rubric = f"""INTEREST FLAVORS (each is already an intersection of the researcher's interests):
 {areas}
 

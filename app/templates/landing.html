@@ -3,43 +3,46 @@
 {% block content %}
 
 <section class="hero">
-  <span class="eyebrow">Free, for researchers, by researchers</span>
+  <span class="eyebrow">{% if source_url %}A fully free, open-source tool for researchers{% else %}A fully free tool for researchers{% endif %}</span>
   <h1>Your daily <span class="grad">research radar</span>.<br>Never miss the paper that matters.</h1>
-  <p class="sub">Research Radar scans tens of thousands of new publications and preprints
-    every morning and hand-delivers the handful that actually fit <em>your</em> research —
+  <p class="sub">Research Radar scans the day's new publications and preprints each
+    morning and surfaces the handful that actually fit <em>your</em> research —
     each with a plain-English rationale you can check.</p>
   <div class="hero-cta">
-    <a class="btn btn-lg" href="/login">Start your radar — it's free</a>
-    <a class="btn btn-lg btn-ghost" href="#how">See how it works</a>
+    <a class="btn btn-lg" href="/login">Create an account</a>
+    <a class="btn btn-lg btn-ghost" href="#how">How it works</a>
   </div>
-  <p class="hero-free">100% free — no tiers, no credit card, no catch.
-    We built this to advance research, not to sell you anything.</p>
+  <p class="hero-free">Free for everyone — no tiers, no card, no catch. Built by a
+    researcher to advance research, not to sell anything.</p>
 </section>
 
 <section class="section">
   <div class="wrap">
-    <h2>Built for how academics actually read</h2>
-    <p class="lead">Keyword alerts drown you; tables of contents arrive months late.
-      Research Radar reads like a sharp colleague who knows exactly what you care about.</p>
+    <h2>Made for how academics actually read</h2>
+    <p class="lead">Keyword alerts are imprecise, and tables of contents arrive late.
+      This tool reads new abstracts against a description of your work that you write
+      and can edit.</p>
     <div class="grid3">
       <div class="feature">
         <div class="icon">&#127757;</div>
         <h3>Field-agnostic coverage</h3>
-        <p>OpenAlex, arXiv, SocArXiv and PsyArXiv — journals and preprints across every
-          discipline, gathered daily from the areas your own seed papers live in.</p>
+        <p>OpenAlex, arXiv, SocArXiv and PsyArXiv — journals and preprints across
+          disciplines, gathered daily from the research areas your own seed papers
+          live in.</p>
       </div>
       <div class="feature">
         <div class="icon">&#128269;</div>
-        <h3>Transparent AI rationales</h3>
-        <p>An AI judge reads every shortlisted abstract against criteria <em>you</em> can
-          read and edit, then scores fit 0–10 with a one-sentence reason. No black-box
-          ranking — you always see the why.</p>
+        <h3>Readable AI rationales</h3>
+        <p>An AI judge reads every shortlisted abstract against criteria you can read
+          and edit, then scores fit 0–10 with a one-sentence reason. No black-box
+          ranking — the "why" is always shown.</p>
       </div>
       <div class="feature">
         <div class="icon">&#127919;</div>
-        <h3>Gets sharper as you use it</h3>
+        <h3>Corrects with your feedback</h3>
         <p>Thumbs-up and thumbs-down on any pick become boundary examples the judge
-          learns from the very next day. Your radar tunes itself to your taste.</p>
+          reads on the next run, so the selection tracks your actual judgment over
+          time.</p>
       </div>
     </div>
   </div>
@@ -49,24 +52,24 @@
   <div class="wrap">
     <h2>How it works</h2>
     <p class="lead">Two stages, both inspectable: <strong>Gathering</strong> casts the
-      net, <strong>Selection</strong> decides what deserves your attention.</p>
+      net, <strong>Selection</strong> reads what was caught.</p>
     <div class="steps">
       <div class="step">
-        <h3>Tell us what you work on</h3>
-        <p>Describe your interests in your own words and paste a few papers you wish
-          you'd been alerted to. That's your whole setup — about five minutes.</p>
+        <h3>Describe your work</h3>
+        <p>Write down your interests in your own words and add a few papers you wish
+          you'd been alerted to. Setup takes about five minutes.</p>
       </div>
       <div class="step">
-        <h3>We gather &amp; shortlist daily</h3>
-        <p>Every morning we search the research areas your seed papers point to and
-          shortlist new work that sits closest to them — semantic closeness, not
-          keyword roulette.</p>
+        <h3>Daily gathering &amp; shortlist</h3>
+        <p>Each morning the pipeline searches the research areas your seed papers
+          point to and shortlists new work that sits closest to them by semantic
+          similarity, not keywords.</p>
       </div>
       <div class="step">
-        <h3>An AI judge picks your briefing</h3>
-        <p>The judge reads each shortlisted abstract against your Selection Criteria
-          and scores its fit. The best land in your inbox and dashboard, rationale
-          attached.</p>
+        <h3>An AI judge reads the shortlist</h3>
+        <p>The judge scores each shortlisted abstract against your Selection
+          Criteria. Papers that clear your bar appear in your dashboard and, if you
+          want, your inbox — rationale attached.</p>
       </div>
     </div>
   </div>
@@ -75,6 +78,7 @@
 <section class="section">
   <div class="wrap">
     <div class="quote">
+      <p class="who" style="margin-bottom:10px">From an early user:</p>
       <blockquote>&ldquo;This is exactly what I was looking for. Instead of relying on
         seeing a colleague post about a relevant new pub (or on imprecise keyword
         alerts), this surfaces exactly the kinds of papers most relevant to my
@@ -86,19 +90,21 @@
 
 <section class="free-strip">
   <div class="wrap">
-    <h2>Totally free. Really.</h2>
-    <p>Research Radar is a free service built to advance research. There are no
-      pricing tiers, no premium plan, no credit card, and no catch — every feature is
-      available to everyone, and we never sell or share your data
-      (<a href="/privacy">privacy in plain English</a>).</p>
+    <h2>Free, because it should be</h2>
+    <p>Research Radar is {% if source_url %}an open-source tool{% else %}a tool{% endif %}
+      built and run by a researcher to advance research. There are no pricing tiers,
+      no premium plan, and no credit card — every feature is available to everyone,
+      and your data is never sold or shared
+      (<a href="/privacy">how your data is handled</a>{% if source_url %} ·
+      <a href="{{ source_url }}">source code</a>{% endif %}).</p>
   </div>
 </section>
 
 <section class="wrap">
   <div class="cta-band">
-    <h2>Five minutes to set up. Every morning after, it works for you.</h2>
-    <p>No passwords, no installs — sign in with a magic link and start your radar.</p>
-    <a class="btn btn-lg" href="/login">Get started free</a>
+    <h2>Setup takes about five minutes.</h2>
+    <p>No passwords and nothing to install — sign in with an emailed one-time link.</p>
+    <a class="btn btn-lg" href="/login">Create an account</a>
   </div>
 </section>
 

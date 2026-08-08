@@ -56,7 +56,7 @@ class Browser:
         return self._req(urllib.request.Request(self.base + path))
 
     def post(self, path: str, data: dict):
-        body = urllib.parse.urlencode(data).encode()
+        body = urllib.parse.urlencode(data, doseq=True).encode()
         return self._req(urllib.request.Request(
             self.base + path, data=body,
             headers={"Content-Type": "application/x-www-form-urlencoded"}))
@@ -90,9 +90,9 @@ def test_e2e_signup_onboard_pipeline_dashboard(server, test_db):
                           ("pilot@example.edu",)).fetchone()
     token = row["dev_link"].split("/auth/")[1]
     code, headers, _ = b.get(f"/auth/{token}")
-    assert code == 303 and headers["location"] == "/onboarding"
+    assert code == 303 and headers["location"].startswith("/onboarding")
 
-    # onboarding: 4 steps
+    # onboarding: 6 steps (structured interests)
     code, headers, _ = b.post("/onboarding/about",
                               data={"name": "Pilot Prof", "frequency": "daily"})
     assert code == 303
@@ -100,6 +100,17 @@ def test_e2e_signup_onboard_pipeline_dashboard(server, test_db):
         "/onboarding/interests",
         data={"statement": "I study narrative persuasion and conversational AI in "
                            "online political communication."})
+    assert code == 303
+    code, headers, _ = b.post(
+        "/onboarding/flavors",
+        data={"flavor_key": ["narrative persuasion", "AI persuasion"],
+              "flavor_desc": ["Stories as persuasion devices in politics.",
+                              "Conversational AI that shifts attitudes."],
+              "flavor_core": ["1", "0"]})
+    assert code == 303
+    code, headers, _ = b.post(
+        "/onboarding/negatives",
+        data={"negative": ["Chatbot UX with no persuasion outcome"]})
     assert code == 303
     code, _, body = b.post(
         "/onboarding/seeds",

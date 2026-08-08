@@ -12,14 +12,27 @@ from app import db, auth
 TEMPLATES_DIR = Path(__file__).parent / "templates"
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
+# The founder's real profile, shown as the worked example in the structured
+# interest editor (onboarding + settings).
+from app import founder_example  # noqa: E402
+templates.env.globals["founder"] = {
+    "attribution": founder_example.FOUNDER_ATTRIBUTION,
+    "core_statement": founder_example.FOUNDER_CORE_STATEMENT,
+    "flavors": founder_example.FOUNDER_FLAVORS,
+    "negatives": founder_example.FOUNDER_NEGATIVES,
+}
+
 SESSION_COOKIE = "pr_session"
 
 
 def render(request: Request, name: str, ctx: dict | None = None,
            status_code: int = 200):
+    from app.config import cfg
     ctx = dict(ctx or {})
     ctx["request"] = request
     ctx.setdefault("user", getattr(request.state, "user", None))
+    # public repo link; empty hides it AND any open-source wording site-wide
+    ctx.setdefault("source_url", cfg("SOURCE_URL").strip())
     return templates.TemplateResponse(request, name, ctx, status_code=status_code)
 
 

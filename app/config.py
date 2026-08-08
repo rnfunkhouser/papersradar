@@ -26,6 +26,8 @@ _DEFAULTS = {
     "SMTP_USER": "",
     "SMTP_PASS": "",
     "SMTP_FROM": "Research Radar <no-reply@papersradar.com>",
+    "SOURCE_URL": "",     # public source-code repo; empty hides the link and
+                          # any open-source wording (never claim it falsely)
     "OPENALEX_MAILTO": "admin@papersradar.com",
     "OPENALEX_BASE": "https://api.openalex.org",
     "ZOTERO_BASE": "https://api.zotero.org",

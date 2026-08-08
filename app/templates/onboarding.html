@@ -4,10 +4,11 @@
 <div class="wrap-narrow">
   <h1 class="page-title">Set up your radar</h1>
   <div class="progress">
-    {% for i in [1, 2, 3, 4] %}<span class="{{ 'done' if step >= i }}"></span>{% endfor %}
+    {% for i in range(1, n_steps + 1) %}<span class="{{ 'done' if step >= i }}"></span>{% endfor %}
   </div>
-  <div class="step-label">Step {{ step }} of 4 ·
-    {{ ["About you", "Your interests", "Seed papers", "Review & launch"][step - 1] }}</div>
+  <div class="step-label">Step {{ step }} of {{ n_steps }} ·
+    {{ ["About you", "Describe your research", "Topics & intersections",
+        "Not interested", "Seed papers", "Review & launch"][step - 1] }}</div>
 
   {% if notice %}<div class="notice">{{ notice }}</div>{% endif %}
   {% if error %}<div class="error">{{ error }}</div>{% endif %}
@@ -31,23 +32,67 @@
 
   {% elif step == 2 %}
   <div class="panel">
-    <h3>Describe your research interests — in your own words</h3>
+    <h3>Describe your research in a few sentences</h3>
     <div class="field-note">
-      <strong>Why this matters:</strong> this paragraph becomes the core of your
-      <em>Selection Criteria</em> — the instructions an AI reader (we call it the
-      <em>judge</em>) uses to score every candidate paper's fit for you, 0–10, with a
-      one-sentence rationale. Write it like you'd brief a sharp new PhD student:
-      what you work on, what a great find looks like, and what only <em>sounds</em>
-      related but isn't. You can edit every word of it later.
+      Write it as you would to a <strong>sharp PhD student outside your
+      subfield</strong>: what you study, what angle you take, and what only
+      <em>sounds</em> related but isn't. This becomes the opening of your Selection
+      Criteria — the instructions an AI reader uses to score every paper's fit for
+      you. You can edit every word later.
     </div>
+    {% set example_part = "core" %}{% include "_founder_example.html" %}
     <form method="post" action="/onboarding/interests">
-      <label>Your interests</label>
+      <label>Your research, in a few sentences</label>
       <textarea name="statement" rows="7" placeholder="I study how ... I'm especially interested in ... Papers about X in general are background noise; what I care about is ...">{{ user.interest_statement }}</textarea>
       <button class="btn" type="submit" style="margin-top:14px">Continue</button>
     </form>
   </div>
+  <div style="margin:18px 0">
+    <a class="btn btn-ghost" href="/onboarding?step=1">Back</a>
+  </div>
 
   {% elif step == 3 %}
+  <div class="panel">
+    <h3>Your topics &amp; intersections</h3>
+    <div class="field-note">
+      Add the specific topics you want papers about — each with a short name and 1–3
+      sentences. Name the <strong>specific theories, frameworks, and methods you want
+      to see</strong> in results. <strong>Intersections beat broad topics:</strong>
+      "misinformation" alone will bury you, but "inoculation interventions against
+      health misinformation" hits the mark; likewise "narrative persuasion in climate
+      communication" beats "climate change". Star (&#9733;) the topics that matter
+      most.
+    </div>
+    {% set example_part = "flavors" %}{% include "_founder_example.html" %}
+    <form method="post" action="/onboarding/flavors">
+      {% include "_flavor_editor.html" %}
+      <button class="btn" type="submit" style="margin-top:14px">Continue</button>
+    </form>
+  </div>
+  <div style="margin:18px 0">
+    <a class="btn btn-ghost" href="/onboarding?step=2">Back</a>
+  </div>
+
+  {% elif step == 4 %}
+  <div class="panel">
+    <h3>What you're <em>not</em> interested in</h3>
+    <div class="field-note">
+      List the <strong>adjacent-but-irrelevant</strong> areas that would otherwise
+      sneak in: nearby subfields you don't follow, methods or literatures to exclude,
+      applications of your topic that don't interest you. This is optional but does a
+      lot of work — it's how the AI reader learns your boundaries.
+    </div>
+    {% set example_part = "negatives" %}{% include "_founder_example.html" %}
+    <form method="post" action="/onboarding/negatives">
+      {% include "_negatives_editor.html" %}
+      <button class="btn" type="submit" style="margin-top:14px">Continue</button>
+    </form>
+  </div>
+  <div style="margin:18px 0">
+    <a class="btn btn-ghost" href="/onboarding?step=3">Back</a>
+  </div>
+
+  {% elif step == 5 %}
   <div class="panel">
     <h3>Add seed papers</h3>
     <div class="field-note">
@@ -73,7 +118,7 @@ The title of a paper also works"></textarea>
           <span class="v">{{ s.doi or 'no DOI' }}</span>
           <form method="post" action="/onboarding/seeds/remove" style="display:inline">
             <input type="hidden" name="seed_id" value="{{ s.id }}">
-            <input type="hidden" name="next" value="/onboarding?step=3">
+            <input type="hidden" name="next" value="/onboarding?step=5">
             <button type="submit" title="Remove">&#10005;</button>
           </form>
         </div>
@@ -84,16 +129,16 @@ The title of a paper also works"></textarea>
   {% include "zotero_widget.html" %}
 
   <div style="display:flex;justify-content:space-between;margin:18px 0">
-    <a class="btn btn-ghost" href="/onboarding?step=2">Back</a>
+    <a class="btn btn-ghost" href="/onboarding?step=4">Back</a>
     {% if seeds|length >= min_seeds %}
-      <a class="btn" href="/onboarding?step=4">Continue</a>
+      <a class="btn" href="/onboarding?step=6">Continue</a>
     {% else %}
       <span class="hint" style="align-self:center">Add at least {{ min_seeds }} seeds to continue
         ({{ seeds|length }} so far)</span>
     {% endif %}
   </div>
 
-  {% elif step == 4 %}
+  {% elif step == 6 %}
   <div class="panel">
     <h3>How your radar will work</h3>
     <p style="margin:10px 0">Two stages, every morning:</p>
@@ -102,16 +147,17 @@ The title of a paper also works"></textarea>
       <strong>{{ seeds|length }} seed papers</strong>, and shortlist the new papers
       that sit closest to them.</p>
     <p style="margin:8px 0"><strong>2 · Selection</strong> decides: an AI judge reads
-      each shortlisted abstract against your Selection Criteria and scores its
-      <strong>fit</strong> from 0–10 with a one-sentence rationale. It also tags which of
-      your <strong>flavors</strong> — named sub-interests we draft from your description,
-      editable in Settings — each paper engages. Only the best make your briefing.</p>
+      each shortlisted abstract against your Selection Criteria — your description,
+      your <strong>{{ flavors|length }} topic{{ 's' if flavors|length != 1 }}</strong>,
+      and your {{ negatives|length }} exclusion{{ 's' if negatives|length != 1 }} —
+      and scores its <strong>fit</strong> from 0–10 with a one-sentence rationale.
+      Only the best make your briefing.</p>
     <p style="margin:8px 0"><strong>You stay in charge:</strong> thumbs-up/down any pick
       and the judge treats it as a boundary example the very next day. Edit your
-      criteria any time — every scoring rule is plain English you can read.</p>
+      criteria any time in Settings — every scoring rule is plain English you can read.</p>
   </div>
   <div style="display:flex;justify-content:space-between;margin:18px 0">
-    <a class="btn btn-ghost" href="/onboarding?step=3">Back</a>
+    <a class="btn btn-ghost" href="/onboarding?step=5">Back</a>
     <form method="post" action="/onboarding/finish">
       <button class="btn btn-lg" type="submit">Launch my radar</button>
     </form>

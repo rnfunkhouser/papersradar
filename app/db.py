@@ -165,12 +165,33 @@ CREATE TABLE IF NOT EXISTS email_ingest (
 """
 
 
+# Additive migrations for existing databases (CREATE TABLE IF NOT EXISTS never
+# adds columns). Applied on connect; each is a no-op once present.
+MIGRATIONS = [
+    # structured research-interest onboarding (2026-08): repeatable topic
+    # entries + explicit exclusions, kept alongside the legacy paragraph
+    ("users", "interest_flavors_json",
+     "ALTER TABLE users ADD COLUMN interest_flavors_json TEXT DEFAULT '[]'"),
+    ("users", "interest_negatives_json",
+     "ALTER TABLE users ADD COLUMN interest_negatives_json TEXT DEFAULT '[]'"),
+]
+
+
+def _migrate(con: sqlite3.Connection) -> None:
+    for table, column, ddl in MIGRATIONS:
+        cols = {r["name"] for r in con.execute(f"PRAGMA table_info({table})")}
+        if column not in cols:
+            con.execute(ddl)
+    con.commit()
+
+
 def connect(path=None) -> sqlite3.Connection:
     con = sqlite3.connect(path or db_path(), timeout=30)
     con.row_factory = sqlite3.Row
     con.execute("PRAGMA journal_mode=WAL")
     con.execute("PRAGMA foreign_keys=ON")
     con.executescript(SCHEMA)
+    _migrate(con)
     return con
 
 
@@ -219,6 +240,32 @@ def save_profile(con, uid: int, prof: dict, version: str) -> None:
         "ON CONFLICT(user_id) DO UPDATE SET version=excluded.version, "
         "profile_json=excluded.profile_json, updated_at=excluded.updated_at",
         (uid, version, json.dumps(body, ensure_ascii=False), now()))
+    con.commit()
+
+
+def delete_user_cascade(con, uid: int) -> None:
+    """Self-serve account deletion: remove every row belonging to the user —
+    votes, click logs, briefings, judgments, seeds + their vectors, Zotero
+    link (and its encrypted key), profile, pending login tokens, rate-limit
+    rows, and the account itself. Shared corpus rows (papers) stay: they are
+    not personal data."""
+    user = get_user(con, uid)
+    if not user:
+        return
+    email = user["email"]
+    con.execute("DELETE FROM clicks WHERE user_id=?", (uid,))
+    con.execute("DELETE FROM feedback WHERE user_id=?", (uid,))
+    con.execute("DELETE FROM briefing_items WHERE user_id=?", (uid,))
+    con.execute("DELETE FROM judgments WHERE user_id=?", (uid,))
+    con.execute("DELETE FROM seed_embeddings WHERE seed_id IN "
+                "(SELECT id FROM seeds WHERE user_id=?)", (uid,))
+    con.execute("DELETE FROM seeds WHERE user_id=?", (uid,))
+    con.execute("DELETE FROM zotero_links WHERE user_id=?", (uid,))
+    con.execute("DELETE FROM profiles WHERE user_id=?", (uid,))
+    con.execute("DELETE FROM email_ingest WHERE user_id=?", (uid,))
+    con.execute("DELETE FROM auth_tokens WHERE email=?", (email,))
+    con.execute("DELETE FROM login_attempts WHERE email=?", (email,))
+    con.execute("DELETE FROM users WHERE id=?", (uid,))
     con.commit()
 
 

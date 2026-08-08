@@ -3,6 +3,8 @@
 {% block content %}
 <div class="wrap" style="max-width:820px">
   <h1 class="page-title">Your briefing</h1>
+  {% if welcome %}<div class="notice">You're signed in — you'll stay signed in on
+    this device for 30 days. You can sign out anytime from the menu above.</div>{% endif %}
   {% if sel_date %}
     <p class="page-sub">{{ sel_date }} · {{ cards|length }} pick{{ 's' if cards|length != 1 }} ·
       <a href="/about-scores">how these scores work</a></p>

@@ -63,7 +63,8 @@ def auth_click(request: Request, token: str):
                                     "request a fresh one.", "email": ""},
                           status_code=400)
         user = db.ensure_user(con, email)
-        dest = "/dashboard" if user["onboarded_at"] else "/onboarding"
+        # welcome=1 surfaces the "signed in for 30 days on this device" note once
+        dest = "/dashboard?welcome=1" if user["onboarded_at"] else "/onboarding?welcome=1"
         resp = RedirectResponse(dest, status_code=303)
         set_session_cookie(resp, user["id"])
         return resp
@@ -84,5 +85,15 @@ def about_scores(request: Request):
     try:
         get_user(request, con)
         return render(request, "about_scores.html")
+    finally:
+        con.close()
+
+
+@router.get("/privacy")
+def privacy(request: Request):
+    con = db.connect()
+    try:
+        get_user(request, con)
+        return render(request, "privacy.html")
     finally:
         con.close()

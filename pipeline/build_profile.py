@@ -66,6 +66,55 @@ def bump_version() -> str:
     return dt.datetime.now().strftime("%Y-%m-%d-%H%M%S")
 
 
+# --- structured onboarding -> judge profile ----------------------------------
+
+# Default fit rule composed for structured profiles: flavors-as-intersections,
+# modeled on the founder's own rule. The CORE sentence is appended only when
+# the user starred at least one flavor.
+DEFAULT_FIT_RULE = (
+    "Each flavor above is already an intersection of the researcher's "
+    "interests, so a paper squarely inside ONE flavor is a bullseye — it does "
+    "not also need to touch the others. Connecting two or more flavors makes "
+    "it even better. 'Squarely inside' means the flavor is the paper's central "
+    "research question or design — tested or theorized substantively, not a "
+    "passing mention, not just the application domain, and not a motivating "
+    "citation."
+)
+CORE_FIT_SENTENCE = (
+    " Flavors marked CORE are the researcher's highest priorities — weigh "
+    "them most heavily on borderline papers."
+)
+
+
+def slug_key(name: str) -> str:
+    """'Narrative persuasion' -> 'narrative_persuasion' (judge flavor key)."""
+    return re.sub(r"\W+", "_", (name or "").strip().lower()).strip("_")[:40]
+
+
+def structured_profile(statement: str, flavors: list[dict],
+                       negatives: list[str]) -> dict:
+    """Compose the judge-profile contract from the structured onboarding
+    fields (core statement + repeatable topic entries + exclusions).
+    Deterministic, no network. Entries missing a name or description are
+    dropped; with no usable flavor entries this degrades to the legacy
+    fallback profile so the judge always has a rubric."""
+    prof = fallback_profile("", statement)
+    flist = []
+    for f in flavors or []:
+        key = slug_key(f.get("key") or f.get("name") or "")
+        desc = str(f.get("description") or "").strip()[:600]
+        if key and desc:
+            flist.append({"key": key, "description": desc,
+                          "core": bool(f.get("core"))})
+    if flist:
+        prof["flavors"] = flist
+        prof["fit_rule"] = DEFAULT_FIT_RULE + (
+            CORE_FIT_SENTENCE if any(f["core"] for f in flist) else "")
+    prof["negatives"] = [str(n).strip() for n in (negatives or [])
+                         if str(n).strip()][:20]
+    return prof
+
+
 def draft_flavors(statement: str, seed_titles: list[str]):
     """LLM-drafted flavors, or None if unavailable/unparseable."""
     user = ("DESCRIPTION:\n" + statement + "\n\nEXEMPLARY PAPERS:\n"

@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Privacy &amp; your data — Research Radar{% endblock %}
+{% block content %}
+<div class="wrap-narrow">
+  <h1 class="page-title">Privacy &amp; your data, in plain English</h1>
+  <p class="page-sub">Research Radar is a free service run to advance research.
+    Everything below is a factual description of how the software works.</p>
+
+  <div class="panel">
+    <h3>What we store</h3>
+    <p>Your account lives in a single database on our server. It holds: your
+      <strong>email address</strong> and name, your <strong>research-interest
+      text</strong> (your description, topics, and exclusions), your
+      <strong>seed papers</strong>, and — if you use them — your
+      <strong>thumbs&#8209;up/down votes</strong> and <strong>briefing click
+      logs</strong> (which picks you opened), plus the briefings and fit scores we
+      compute for you. That's it — there is nothing else to store, because there are
+      no payments and no profiles beyond your research interests.</p>
+  </div>
+
+  <div class="panel">
+    <h3>Signing in</h3>
+    <p>There are no passwords. Sign-in links are <strong>one-time</strong> and expire
+      in 20 minutes; we keep only a <strong>hashed</strong> copy of each link's token,
+      so a stored token can't be replayed. After you click a link, you stay signed in
+      on that device via a signed browser <strong>cookie</strong> for
+      <strong>30 days</strong> (or until you sign out).</p>
+  </div>
+
+  <div class="panel">
+    <h3>Zotero</h3>
+    <p>The recommended way to connect Zotero is a <strong>public group
+      library</strong>, which needs no API key at all. If you instead provide a
+      private read-only API key, it is <strong>encrypted at rest</strong> and
+      <strong>never displayed again</strong> — not to you, not in any page. You can
+      disconnect at any time.</p>
+  </div>
+
+  <div class="panel">
+    <h3>What leaves our server</h3>
+    <p>To compute your briefing, <strong>paper titles and abstracts</strong> and
+      <strong>your research-interest text</strong> are sent to third-party LLM APIs —
+      <strong>Groq, Google Gemini, and OpenRouter/Cerebras</strong>. No other
+      personal data is sent: not your email address, not your name, not your click
+      history. Paper metadata itself comes from public scholarly indexes
+      (OpenAlex, arXiv, OSF preprint servers).</p>
+  </div>
+
+  <div class="panel">
+    <h3>No tracking, no selling</h3>
+    <p>We run <strong>no third-party analytics or trackers</strong> — every asset on
+      this site is served from our own server, and the only logs are the click logs
+      described above, used to make your briefings better. We <strong>never sell or
+      share your data</strong> with anyone.</p>
+  </div>
+
+  <div class="panel">
+    <h3>Email</h3>
+    <p>You will receive <strong>only</strong> the briefing emails at the frequency
+      you chose, plus sign-in links you request — nothing else, ever. Every briefing
+      email has a working unsubscribe link, and you can switch to dashboard-only
+      delivery in Settings.</p>
+  </div>
+
+  <div class="panel">
+    <h3>Deleting everything</h3>
+    <p>You can <strong>delete your account and all of your data yourself, anytime</strong>,
+      in <a href="/settings">Settings → Delete account</a>. Deletion removes your
+      account, interest text, seed papers, votes, click logs, briefings, and any
+      Zotero connection from our database immediately.</p>
+  </div>
+
+  <p class="hint" style="margin:8px 0 40px">Questions? Email
+    <a href="mailto:admin@papersradar.com">admin@papersradar.com</a>.</p>
+</div>
+{% endblock %}

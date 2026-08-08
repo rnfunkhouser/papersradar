@@ -1,0 +1,25 @@
+{# Repeatable "not interested" entries. Expects `negatives`: [str].
+   Submits negative[] (blank rows dropped server-side). #}
+<div class="flavor-editor" data-editor="negatives">
+  {% set nrows = negatives if negatives else [""] %}
+  {% for n in nrows %}
+  <div class="flavor-row">
+    <div class="row-head">
+      <input type="text" name="negative" value="{{ n }}" maxlength="300"
+             placeholder="e.g. Public attitudes toward AI, where AI isn't the communicator">
+      <button type="button" class="rm" title="Remove">&#10005;</button>
+    </div>
+  </div>
+  {% endfor %}
+  <template class="flavor-template">
+    <div class="flavor-row">
+      <div class="row-head">
+        <input type="text" name="negative" value="" maxlength="300"
+               placeholder="e.g. Public attitudes toward AI, where AI isn't the communicator">
+        <button type="button" class="rm" title="Remove">&#10005;</button>
+      </div>
+    </div>
+  </template>
+  <button type="button" class="btn btn-ghost" data-add-row
+          style="margin-top:8px">+ Add another exclusion</button>
+</div>

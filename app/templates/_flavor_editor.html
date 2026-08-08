@@ -1,0 +1,36 @@
+{# Repeatable topic/intersection entries. Expects `flavors`:
+   [{name, description, core}]. Submits parallel arrays flavor_key[],
+   flavor_desc[], flavor_core[] (hidden, "1"/"0", kept aligned per row). #}
+<div class="flavor-editor" data-editor="flavors">
+  {% set rows = flavors if flavors else [{"name": "", "description": "", "core": False}] %}
+  {% for f in rows %}
+  <div class="flavor-row">
+    <div class="row-head">
+      <input type="text" name="flavor_key" value="{{ f.name }}"
+             placeholder="Short name, e.g. narrative persuasion" maxlength="80">
+      <input type="hidden" name="flavor_core" value="{{ '1' if f.core else '0' }}">
+      <button type="button" class="star {{ 'on' if f.core }}"
+              title="Star = core topic (weighed most heavily)">&#9733;</button>
+      <button type="button" class="rm" title="Remove this topic">&#10005;</button>
+    </div>
+    <textarea name="flavor_desc" rows="2" maxlength="600"
+              placeholder="1–3 sentences: what combination of things makes a paper belong here?">{{ f.description }}</textarea>
+  </div>
+  {% endfor %}
+  <template class="flavor-template">
+    <div class="flavor-row">
+      <div class="row-head">
+        <input type="text" name="flavor_key" value=""
+               placeholder="Short name, e.g. narrative persuasion" maxlength="80">
+        <input type="hidden" name="flavor_core" value="0">
+        <button type="button" class="star"
+                title="Star = core topic (weighed most heavily)">&#9733;</button>
+        <button type="button" class="rm" title="Remove this topic">&#10005;</button>
+      </div>
+      <textarea name="flavor_desc" rows="2" maxlength="600"
+                placeholder="1–3 sentences: what combination of things makes a paper belong here?"></textarea>
+    </div>
+  </template>
+  <button type="button" class="btn btn-ghost" data-add-row
+          style="margin-top:8px">+ Add another topic</button>
+</div>

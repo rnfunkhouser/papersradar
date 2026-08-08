@@ -1,4 +1,34 @@
-// Research Radar — vanilla JS. Vote buttons on dashboard cards.
+// Research Radar — vanilla JS. Vote buttons + structured interest editors.
+
+// Structured editors (topics / exclusions): add row, remove row, star core.
+document.addEventListener("click", (ev) => {
+  const add = ev.target.closest("[data-add-row]");
+  if (add) {
+    const editor = add.closest(".flavor-editor");
+    const tpl = editor.querySelector(".flavor-template");
+    tpl.before(tpl.content.cloneNode(true));
+    return;
+  }
+  const rm = ev.target.closest(".flavor-row .rm");
+  if (rm) {
+    const editor = rm.closest(".flavor-editor");
+    rm.closest(".flavor-row").remove();
+    if (!editor.querySelector(".flavor-row")) {         // never zero rows
+      const tpl = editor.querySelector(".flavor-template");
+      tpl.before(tpl.content.cloneNode(true));
+    }
+    return;
+  }
+  const star = ev.target.closest(".flavor-row .star");
+  if (star) {
+    const hidden = star.closest(".row-head").querySelector("input[name=flavor_core]");
+    const on = hidden.value !== "1";
+    hidden.value = on ? "1" : "0";
+    star.classList.toggle("on", on);
+  }
+});
+
+// Vote buttons on dashboard cards.
 document.addEventListener("click", async (ev) => {
   const btn = ev.target.closest(".vote");
   if (!btn) return;
