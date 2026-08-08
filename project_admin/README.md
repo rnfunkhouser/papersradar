@@ -1,4 +1,4 @@
-# Papers Radar
+# Research Radar
 
 Multi-user hosted "daily research radar" for academics: gathers new papers and
 preprints (OpenAlex, arXiv, SocArXiv, PsyArXiv) every morning, shortlists each

@@ -1,4 +1,4 @@
-// Papers Radar — vanilla JS. Vote buttons on dashboard cards.
+// Research Radar — vanilla JS. Vote buttons on dashboard cards.
 document.addEventListener("click", async (ev) => {
   const btn = ev.target.closest(".vote");
   if (!btn) return;

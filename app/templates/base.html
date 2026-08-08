@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}Papers Radar{% endblock %}</title>
+  <title>{% block title %}Research Radar{% endblock %}</title>
   <meta name="description" content="Your daily research radar — new papers that actually fit your interests, with a transparent AI rationale for every pick.">
   <link rel="stylesheet" href="/static/style.css">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='42' fill='%232563eb'/%3E%3Ccircle cx='50' cy='50' r='24' fill='none' stroke='white' stroke-width='7'/%3E%3Ccircle cx='50' cy='50' r='7' fill='white'/%3E%3C/svg%3E">
@@ -11,7 +11,7 @@
 <body>
 <header class="site-header">
   <div class="wrap">
-    <a class="logo" href="/"><span class="dot"></span>Papers Radar</a>
+    <a class="logo" href="/"><span class="dot"></span>Research Radar</a>
     <nav class="nav">
       {% if user %}
         <a href="/dashboard">Dashboard</a>
@@ -29,8 +29,9 @@
   {% block content %}{% endblock %}
 </main>
 <footer class="site-footer">
-  Papers Radar · a research-radar service for academics ·
-  <a href="/about-scores">how the scores work</a>
+  Research Radar · a free research-alert service for academics ·
+  <a href="/about-scores">how the scores work</a> ·
+  <a href="/privacy">privacy</a>
 </footer>
 <script src="/static/app.js"></script>
 </body>

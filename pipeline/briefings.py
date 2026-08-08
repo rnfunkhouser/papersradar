@@ -77,7 +77,7 @@ def render_email(user, rows, date: str) -> str:
         </div>""")
     return f"""
     <div style="font-family:system-ui,-apple-system,sans-serif;max-width:640px;margin:0 auto;padding:8px">
-      <h2 style="color:#1a56db;margin-bottom:2px">Papers Radar</h2>
+      <h2 style="color:#1a56db;margin-bottom:2px">Research Radar</h2>
       <div style="color:#64748b;margin-bottom:18px">{nice} · {len(rows)} picks for
         {html.escape(user['name'] or user['email'])}</div>
       {''.join(cards)}
@@ -101,7 +101,7 @@ def run(con, date: str | None = None) -> dict:
         if rows:
             built += 1
             if user["frequency"] != "none":
-                subj = f"Papers Radar — {len(rows)} picks for {date}"
+                subj = f"Research Radar — {len(rows)} picks for {date}"
                 if mailer.send(user["email"], subj, render_email(user, rows, date)):
                     sent += 1
     summary = {"date": date, "users_with_items": built, "emails_sent": sent}

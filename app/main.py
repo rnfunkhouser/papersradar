@@ -1,4 +1,4 @@
-"""Papers Radar web app. Run locally:
+"""Research Radar web app. Run locally:
 
     uvicorn app.main:app --reload
 
@@ -22,7 +22,7 @@ def create_app() -> FastAPI:
         format="%(asctime)s %(name)s %(levelname)s %(message)s",
         handlers=[logging.StreamHandler(),
                   logging.FileHandler(log_dir() / "web.log")])
-    application = FastAPI(title="Papers Radar", docs_url=None, redoc_url=None,
+    application = FastAPI(title="Research Radar", docs_url=None, redoc_url=None,
                           openapi_url=None)
     from app import routes_public, routes_user, routes_admin, routes_zotero
     application.include_router(routes_public.router)

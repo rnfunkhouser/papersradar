@@ -25,7 +25,7 @@ _DEFAULTS = {
     "SMTP_PORT": "587",
     "SMTP_USER": "",
     "SMTP_PASS": "",
-    "SMTP_FROM": "Papers Radar <no-reply@papersradar.com>",
+    "SMTP_FROM": "Research Radar <no-reply@papersradar.com>",
     "OPENALEX_MAILTO": "admin@papersradar.com",
     "OPENALEX_BASE": "https://api.openalex.org",
     "ZOTERO_BASE": "https://api.zotero.org",
