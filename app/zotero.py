@@ -22,6 +22,22 @@ from app.config import cfg
 
 DOI_RE = re.compile(r"10\.\d{4,9}/[^\s\"'<>]+", re.I)
 
+# A pasted group URL like https://www.zotero.org/groups/1234567/my-seeds
+GROUP_URL_RE = re.compile(r"zotero\.org/groups/(\d+)", re.I)
+
+
+def parse_library_ref(text: str, library_type: str = "group") -> tuple[str, str] | None:
+    """User-pasted library reference -> (library_type, library_id) or None.
+    Accepts a Zotero group URL (forces type 'group') or a bare numeric ID
+    (kept under the given type). Public groups need no API key at all."""
+    text = (text or "").strip()
+    m = GROUP_URL_RE.search(text)
+    if m:
+        return "group", m.group(1)
+    if text.isdigit():
+        return ("group" if library_type == "group" else "user"), text
+    return None
+
 # Item types worth seeding (skip attachments, notes, blog posts, web pages...)
 SCHOLARLY = {"journalArticle", "bookSection", "book", "conferencePaper",
              "preprint", "report", "thesis", "manuscript"}
@@ -66,8 +82,9 @@ def fetch_collections(library_type: str, library_id: str, api_key: str) -> list[
                 + "/collections?format=json&limit=100", api_key)
     if page is None:
         raise ZoteroError(
-            "Couldn't reach that Zotero library — double-check the library ID and "
-            "that the API key has read access to it.")
+            "Couldn't reach that Zotero library — double-check the group URL/ID "
+            "and that the group is set to Public (for a private library, that "
+            "the API key has read access to it).")
     return [{"key": c.get("key", ""),
              "name": (c.get("data") or {}).get("name", "(unnamed)")}
             for c in page if c.get("key")]

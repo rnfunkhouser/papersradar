@@ -55,8 +55,12 @@ def build_briefing(con, user, date: str) -> list:
 
 
 def render_email(user, rows, date: str) -> str:
+    from app import auth
     base = cfg("BASE_URL").rstrip("/")
     nice = dt.date.fromisoformat(date).strftime("%A, %B %d, %Y")
+    unsub = auth.make_unsubscribe_token(user["id"])
+    freq_phrase = ("weekly (1-per-week)" if user["frequency"] == "weekly"
+                   else "daily (7-per-week)")
     cards = []
     for r in rows:
         flavors = ", ".join(f.replace("_", " ")
@@ -86,6 +90,14 @@ def render_email(user, rows, date: str) -> str:
         Criteria — the chip shows its fit score and matched flavors.
         <a href="{base}/dashboard" style="color:#1a56db">Open your dashboard</a> to vote
         on picks or <a href="{base}/settings" style="color:#1a56db">tune your criteria</a>.
+      </div>
+      <div style="color:#94a3b8;font-size:12px;margin-top:10px;border-top:1px solid #e2e8f0;padding-top:10px">
+        Research Radar is a free tool that scans each day's new papers and preprints
+        for the ones that fit your research. You're receiving this because you chose
+        {freq_phrase} briefings —
+        <a href="{base}/settings" style="color:#1a56db">manage</a> or
+        <a href="{base}/unsubscribe/{unsub}" style="color:#1a56db">unsubscribe</a> in
+        one click.
       </div>
     </div>"""
 

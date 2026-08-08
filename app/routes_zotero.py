@@ -54,7 +54,7 @@ def _redirect_with(next_url: str, **params) -> RedirectResponse:
 
 
 @router.post("/zotero/connect")
-def zotero_connect(request: Request, library_type: str = Form("user"),
+def zotero_connect(request: Request, library_type: str = Form("group"),
                    library_id: str = Form(""), api_key: str = Form(""),
                    next: str = Form("/settings")):
     con = db.connect()
@@ -62,12 +62,16 @@ def zotero_connect(request: Request, library_type: str = Form("user"),
         user = get_user(request, con)
         if not user:
             return login_redirect()
-        library_type = library_type if library_type in ("user", "group") else "user"
-        library_id = library_id.strip()
+        library_type = library_type if library_type in ("user", "group") else "group"
         api_key = api_key.strip()
-        if not library_id.isdigit():
-            return _redirect_with(next, zerr="The library ID should be a number "
-                                             "(see the help text below the form).")
+        # Accepts a pasted group URL (zotero.org/groups/<id>/...) or a bare ID.
+        # Public groups need no API key.
+        ref = zotero.parse_library_ref(library_id, library_type)
+        if not ref:
+            return _redirect_with(next, zerr="Paste your group's URL "
+                                             "(zotero.org/groups/…) or its numeric "
+                                             "ID (see the help text below the form).")
+        library_type, library_id = ref
         try:
             zotero.fetch_collections(library_type, library_id, api_key)
         except zotero.ZoteroError as e:

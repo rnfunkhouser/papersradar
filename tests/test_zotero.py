@@ -88,6 +88,42 @@ def test_disconnect_keeps_seeds(client):
     con.close()
 
 
+def test_parse_library_ref():
+    # pasted group URLs force type 'group' — the recommended keyless path
+    assert zotero.parse_library_ref(
+        "https://www.zotero.org/groups/1234567/my-seed-papers") == ("group", "1234567")
+    assert zotero.parse_library_ref("zotero.org/groups/42") == ("group", "42")
+    assert zotero.parse_library_ref(" 987 ".strip()) == ("group", "987")
+    assert zotero.parse_library_ref("987", library_type="user") == ("user", "987")
+    assert zotero.parse_library_ref("not a ref") is None
+    assert zotero.parse_library_ref("") is None
+
+
+def test_public_group_url_connect_keyless(client):
+    """The recommended path: paste a public group URL, no API key at all."""
+    _onboard(client, "zg@example.com")
+    r = client.post("/zotero/connect",
+                    data={"library_type": "group",
+                          "library_id": "https://www.zotero.org/groups/555/my-seeds",
+                          "api_key": "", "next": "/settings"})
+    assert r.status_code == 303 and "znotice=" in r.headers["location"]
+    con = appdb.connect()
+    user = appdb.get_user_by_email(con, "zg@example.com")
+    link = con.execute("SELECT * FROM zotero_links WHERE user_id=?",
+                       (user["id"],)).fetchone()
+    assert link["library_type"] == "group" and link["library_id"] == "555"
+    assert link["api_key_enc"] == ""               # keyless: nothing stored
+    con.close()
+    # import works keylessly against the (stub) public group API
+    r = client.post("/zotero/import", data={"next": "/settings"})
+    assert r.status_code == 303 and "znotice=" in r.headers["location"]
+    con = appdb.connect()
+    n = con.execute("SELECT COUNT(*) c FROM seeds WHERE user_id=? AND source='zotero'",
+                    (user["id"],)).fetchone()["c"]
+    assert n == 3
+    con.close()
+
+
 def test_scholarly_filter_and_doi_extraction():
     sch = zotero.scholarly_items(ZOTERO_ITEMS)
     assert {it["key"] for it in sch} == {"K1", "K2", "K3", "K5"}   # K4 note excluded

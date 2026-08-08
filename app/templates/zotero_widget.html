@@ -1,35 +1,59 @@
 {# Zotero linking widget — included by onboarding step 3 and settings.
    Expects: zotero (row or None), zotero_collections, zotero_preview, znext #}
 <div class="panel" id="zotero">
-  <h3 style="margin-bottom:4px">Link your Zotero library</h3>
-  <p class="hint" style="margin-bottom:10px">The power-user option —
-    <strong>recommended if you have 20+ relevant papers saved</strong>. We import your
-    saved papers as seeds in one go. Pasting DOIs above stays the simplest path.</p>
+  <h3 style="margin-bottom:4px">Link a Zotero library</h3>
+  <p class="hint" style="margin-bottom:10px">A quick way to add many seeds at once —
+    <strong>worth it if you have 20+ relevant papers saved</strong>. Pasting DOIs
+    above stays the simplest path.</p>
 
   {% if not zotero %}
+    <div class="field-note">
+      <strong>Recommended: a dedicated public group library.</strong> This way you
+      share only the seed papers you choose — not your whole personal library — and
+      no API key is needed. Two minutes on zotero.org:
+      <ol style="margin:8px 0 0 18px">
+        <li>Go to <em>Groups → Create a new group</em> (free).</li>
+        <li>Choose <em>Public, Closed membership</em> — public makes it readable
+          without a key; closed membership means only you can add to it.</li>
+        <li>Add just your seed papers to the group (drag them over in Zotero).</li>
+        <li>Paste the group's URL or ID below.</li>
+      </ol>
+    </div>
     <form method="post" action="/zotero/connect">
       <input type="hidden" name="next" value="{{ znext }}">
-      <label>Library type</label>
-      <select name="library_type">
-        <option value="user">My personal library</option>
-        <option value="group">A group library</option>
-      </select>
-      <label>Library ID</label>
-      <input type="text" name="library_id" placeholder="e.g. 1234567" required>
-      <label>Zotero API key (read-only)</label>
-      <input type="text" name="api_key" autocomplete="off"
-             placeholder="paste your read-only key">
-      <div class="field-note">
-        <strong>Where do I find these?</strong> On zotero.org, open
-        <em>Settings&nbsp;→&nbsp;Security</em>. Your personal <em>library ID</em>
-        ("userID") is shown in the Applications section there. Then click
-        <em>"Create new private key"</em>, tick <em>read-only</em> access, and paste the
-        key here. For a <em>group</em> library, the ID is the number in the group's URL
-        (zotero.org/groups/&lt;ID&gt;); a public group needs no key at all. We only ever
-        read your library — the key is stored encrypted and never shown again.
-      </div>
-      <button class="btn" type="submit" style="margin-top:12px">Connect Zotero</button>
+      <input type="hidden" name="library_type" value="group">
+      <label>Group URL or ID</label>
+      <input type="text" name="library_id" required
+             placeholder="https://www.zotero.org/groups/1234567/my-seed-papers — or just 1234567">
+      <button class="btn" type="submit" style="margin-top:12px">Connect public group</button>
     </form>
+
+    <details style="margin-top:16px">
+      <summary class="hint" style="cursor:pointer">Prefer to connect a private
+        library with an API key? (fallback option)</summary>
+      <form method="post" action="/zotero/connect" style="margin-top:8px">
+        <input type="hidden" name="next" value="{{ znext }}">
+        <label>Library type</label>
+        <select name="library_type">
+          <option value="user">My personal library</option>
+          <option value="group">A private group library</option>
+        </select>
+        <label>Library ID</label>
+        <input type="text" name="library_id" placeholder="e.g. 1234567">
+        <label>Zotero API key (read-only)</label>
+        <input type="text" name="api_key" autocomplete="off"
+               placeholder="paste your read-only key">
+        <div class="field-note">
+          On zotero.org, open <em>Settings&nbsp;→&nbsp;Security</em>. Your personal
+          <em>library ID</em> ("userID") is shown in the Applications section there.
+          Then click <em>"Create new private key"</em>, tick <em>read-only</em>
+          access, and paste the key here. For a private group, the ID is the number
+          in the group's URL. We only ever read your library — the key is stored
+          encrypted and never shown again.
+        </div>
+        <button class="btn btn-ghost" type="submit" style="margin-top:12px">Connect with API key</button>
+      </form>
+    </details>
 
   {% else %}
     <p style="font-size:14.5px">

@@ -97,3 +97,24 @@ def privacy(request: Request):
         return render(request, "privacy.html")
     finally:
         con.close()
+
+
+@router.get("/unsubscribe/{token}")
+def unsubscribe(request: Request, token: str):
+    """One-click unsubscribe from briefing-email footers: a signed token
+    switches the account to dashboard-only — no login needed, idempotent,
+    and it can only ever turn email OFF."""
+    con = db.connect()
+    try:
+        get_user(request, con)
+        uid = auth.read_unsubscribe_token(token)
+        user = db.get_user(con, uid) if uid is not None else None
+        if not user:
+            return render(request, "unsubscribed.html", {"ok": False},
+                          status_code=400)
+        con.execute("UPDATE users SET frequency='none' WHERE id=?", (uid,))
+        con.commit()
+        return render(request, "unsubscribed.html",
+                      {"ok": True, "email": user["email"]})
+    finally:
+        con.close()

@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Unsubscribed — Research Radar{% endblock %}
+{% block content %}
+<div class="wrap-narrow">
+  <div class="empty" style="margin-top:48px">
+    {% if ok %}
+      <div class="big">&#128237;</div>
+      <h2>You're unsubscribed</h2>
+      <p>Briefing emails to <strong>{{ email }}</strong> are off. Your radar keeps
+        running — your briefings are still on your
+        <a href="/dashboard">dashboard</a> whenever you want them, and you can turn
+        emails back on in <a href="/settings">Settings</a> anytime.</p>
+    {% else %}
+      <div class="big">&#10067;</div>
+      <h2>That unsubscribe link didn't work</h2>
+      <p>The link may be incomplete. You can also turn briefing emails off in
+        <a href="/settings">Settings</a> (choose "Dashboard only").</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

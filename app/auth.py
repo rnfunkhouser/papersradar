@@ -121,6 +121,24 @@ def decrypt_secret(blob: str) -> str:
         return ""
 
 
+def make_unsubscribe_token(uid: int) -> str:
+    """Signed no-login unsubscribe token for briefing-email footers.
+    Deliberately non-expiring: it can only turn briefing emails OFF."""
+    return f"{uid}." + _sign(f"unsub.{uid}")
+
+
+def read_unsubscribe_token(token: str) -> int | None:
+    if not token or token.count(".") != 1:
+        return None
+    uid_s, sig = token.split(".")
+    try:
+        if not hmac.compare_digest(sig, _sign(f"unsub.{uid_s}")):
+            return None
+        return int(uid_s)
+    except (ValueError, RuntimeError):
+        return None
+
+
 def _sign(payload: str) -> str:
     secret = cfg("APP_SECRET")
     if not secret:

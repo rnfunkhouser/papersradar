@@ -91,3 +91,65 @@ def test_judge_batch_total_failure_after_retries():
     assert len(calls) == 3                               # 3 parse attempts
     assert verdicts[0]["fit"] == -1
     assert verdicts[0]["why"] == "batch call failed"
+
+
+# --- structured onboarding -> judge prompt -----------------------------------
+
+def test_structured_profile_composes_judge_prompt():
+    """The three structured onboarding sections (description, topics,
+    exclusions) all land in the judge prompt."""
+    from pipeline.build_profile import structured_profile
+    prof = structured_profile(
+        "I study persuasion in online politics.",
+        [{"name": "AI persuasion", "core": True,
+          "description": "Conversational AI that shifts attitudes."},
+         {"name": "Narrative persuasion", "core": False,
+          "description": "Stories as persuasion devices."}],
+        ["Chatbot UX with no persuasion outcome"])
+    assert prof["flavors"] == [
+        {"key": "ai_persuasion", "core": True,
+         "description": "Conversational AI that shifts attitudes."},
+        {"key": "narrative_persuasion", "core": False,
+         "description": "Stories as persuasion devices."}]
+    p = judging.build_prompt(prof)
+    # section 1: the description opens the researcher profile
+    assert "I study persuasion in online politics." in p
+    # section 2: topics as flavors, starred ones marked (CORE)
+    assert "- ai_persuasion (CORE): Conversational AI that shifts attitudes." in p
+    assert "- narrative_persuasion: Stories as persuasion devices." in p
+    # section 3: exclusions under NOT OF INTEREST
+    assert "EXPLICITLY NOT OF INTEREST:" in p
+    assert "- Chatbot UX with no persuasion outcome" in p
+    # the composed default fit rule mentions intersections + the CORE weighting
+    assert "FIT RULE:" in p and "bullseye" in p and "CORE" in prof["fit_rule"]
+
+
+def test_structured_profile_no_stars_omits_core_marker():
+    from pipeline.build_profile import structured_profile
+    prof = structured_profile(
+        "I study X in depth and at length here.",
+        [{"name": "topic a", "description": "About a."}], [])
+    p = judging.build_prompt(prof)
+    assert "(CORE)" not in p and "CORE" not in prof["fit_rule"]
+
+
+def test_legacy_fallback_profile_still_builds_prompt():
+    """A pre-structured user (interest_statement only) keeps working: the
+    fallback single flavor drives the same flavor rubric, with no (CORE)
+    markers anywhere."""
+    from pipeline.build_profile import fallback_profile
+    prof = fallback_profile("Dr X", "I study collective attention online.")
+    assert prof["flavors"][0]["key"] == "my_research_interests"
+    p = judging.build_prompt(prof)
+    assert "RESEARCHER PROFILE:" in p
+    assert "- my_research_interests: I study collective attention online." in p
+    assert "(CORE)" not in p
+    assert "INTEREST FLAVORS" in p          # flavor path, not the facet path
+
+
+def test_structured_profile_degrades_to_fallback_without_entries():
+    from pipeline.build_profile import structured_profile
+    prof = structured_profile("A statement about my research field.",
+                              [{"name": "", "description": ""}], ["skip me ok"])
+    assert prof["flavors"][0]["key"] == "my_research_interests"
+    assert prof["negatives"] == ["skip me ok"]
