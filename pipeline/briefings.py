@@ -29,7 +29,13 @@ def due_today(user, today: dt.date) -> bool:
 
 
 def select_items(con, user) -> list:
-    """Judged papers above the fit bar that were never briefed to this user."""
+    """Judged papers above the fit bar that were never briefed to this user.
+
+    Ordering (validated 2026-08 against 41 blind owner ratings — see the
+    single-user system's rerank_comparison.md): judge fit is the band, the
+    shortlist's embedding relevance orders papers WITHIN a band, pub_date is
+    the last tiebreak. Legacy judgments may have NULL relevance (COALESCE 0);
+    `backfill_relevance` fills them for users due a briefing."""
     prof = appdb.get_profile(con, user["id"])
     if not prof:
         return []
@@ -40,8 +46,49 @@ def select_items(con, user) -> list:
         "JOIN papers p ON p.id = j.paper_id "
         "WHERE j.user_id=? AND j.profile_version=? AND j.fit >= ? "
         "AND j.paper_id NOT IN (SELECT paper_id FROM briefing_items WHERE user_id=?) "
-        "ORDER BY j.fit DESC, p.pub_date DESC LIMIT ?",
+        "ORDER BY j.fit DESC, COALESCE(j.relevance, 0) DESC, p.pub_date DESC LIMIT ?",
         (user["id"], prof["version"], min_fit, user["id"], max_items)).fetchall()
+
+
+def backfill_relevance(con, user) -> int:
+    """Fill judgments.relevance on legacy rows (judged before the column
+    existed) that can still enter this user's briefings, so day-one ordering
+    works. Reuses the shortlist recipe on vectors already in the DB; the
+    contrast centroid is the backfill batch rather than the original 14-day
+    pool — an acceptable approximation for legacy rows, since only the
+    relative order within this user's judged set matters. Returns rows filled."""
+    from pipeline.shortlist import relevance_scores, _load_matrix
+    prof = appdb.get_profile(con, user["id"])
+    if not prof:
+        return 0
+    embedder = cfg("EMBEDDER")
+    min_fit = cfg_int("BRIEFING_MIN_FIT")
+    rows = con.execute(
+        "SELECT j.paper_id, pe.vector FROM judgments j "
+        "JOIN paper_embeddings pe ON pe.paper_id = j.paper_id AND pe.embedder=? "
+        "WHERE j.user_id=? AND j.profile_version=? AND j.relevance IS NULL "
+        "AND j.fit >= ? AND j.paper_id NOT IN "
+        "(SELECT paper_id FROM briefing_items WHERE user_id=?)",
+        (embedder, user["id"], prof["version"], min_fit, user["id"])).fetchall()
+    if not rows:
+        return 0
+    seed_rows = con.execute(
+        "SELECT se.seed_id, se.vector FROM seed_embeddings se "
+        "JOIN seeds s ON s.id = se.seed_id "
+        "WHERE s.user_id=? AND se.embedder=?",
+        (user["id"], embedder)).fetchall()
+    if not seed_rows:
+        return 0
+    ids, mat = _load_matrix([(r["paper_id"], r["vector"]) for r in rows])
+    _, seeds = _load_matrix([(r["seed_id"], r["vector"]) for r in seed_rows])
+    rel = relevance_scores(mat, seeds)
+    for pid, rv in zip(ids, rel):
+        con.execute(
+            "UPDATE judgments SET relevance=? "
+            "WHERE user_id=? AND paper_id=? AND profile_version=?",
+            (float(rv), user["id"], pid, prof["version"]))
+    con.commit()
+    return len(ids)
 
 
 def build_briefing(con, user, date: str) -> list:
@@ -87,7 +134,8 @@ def render_email(user, rows, date: str) -> str:
       {''.join(cards)}
       <div style="color:#94a3b8;font-size:12px;margin-top:16px">
         Each pick was scored by an AI judge reading the abstract against your Selection
-        Criteria — the chip shows its fit score and matched flavors.
+        Criteria — the chip shows its fit score and matched flavors. Picks are ranked
+        by fit; equally fitting papers are ordered by closeness to your seed papers.
         <a href="{base}/dashboard" style="color:#1a56db">Open your dashboard</a> to vote
         on picks or <a href="{base}/settings" style="color:#1a56db">tune your criteria</a>.
       </div>
@@ -105,10 +153,11 @@ def render_email(user, rows, date: str) -> str:
 def run(con, date: str | None = None) -> dict:
     date = date or appdb.today()
     today = dt.date.fromisoformat(date)
-    built = sent = 0
+    built = sent = backfilled = 0
     for user in con.execute("SELECT * FROM users").fetchall():
         if not due_today(user, today):
             continue
+        backfilled += backfill_relevance(con, user)
         rows = build_briefing(con, user, date)
         if rows:
             built += 1
@@ -116,6 +165,7 @@ def run(con, date: str | None = None) -> dict:
                 subj = f"Research Radar — {len(rows)} picks for {date}"
                 if mailer.send(user["email"], subj, render_email(user, rows, date)):
                     sent += 1
-    summary = {"date": date, "users_with_items": built, "emails_sent": sent}
+    summary = {"date": date, "users_with_items": built, "emails_sent": sent,
+               "relevance_backfilled": backfilled}
     print(f"[briefings] {summary}", file=sys.stderr)
     return summary

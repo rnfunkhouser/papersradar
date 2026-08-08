@@ -85,7 +85,9 @@ def test_shortlist_for_user_ranks_and_caps(test_db, monkeypatch):
     _mk_paper(test_db, "unembedded")                       # no vector -> excluded
     _mk_paper(test_db, "noabs", _unit([1, 0, 0]).tolist(), abstract="")
     got = shortlist_for_user(test_db, user)
-    assert got == [near, mid]                              # capped at 2, far excluded
+    assert [pid for pid, _ in got] == [near, mid]          # capped at 2, far excluded
+    rels = [rel for _, rel in got]
+    assert rels == sorted(rels, reverse=True)              # relevance rides along, desc
 
 
 def test_shortlist_excludes_already_judged(test_db, monkeypatch):
@@ -98,11 +100,11 @@ def test_shortlist_excludes_already_judged(test_db, monkeypatch):
         "INSERT INTO judgments(user_id, paper_id, profile_version, fit, judged_at) "
         "VALUES(?,?,?,?,?)", (user["id"], p1, "v1", 8.0, appdb.now()))
     test_db.commit()
-    assert shortlist_for_user(test_db, user) == [p2]
+    assert [pid for pid, _ in shortlist_for_user(test_db, user)] == [p2]
     # profile version bump re-queues everything
     appdb.save_profile(test_db, user["id"],
                        {"core_statement": "x", "flavors": []}, "v2")
-    assert set(shortlist_for_user(test_db, user)) == {p1, p2}
+    assert {pid for pid, _ in shortlist_for_user(test_db, user)} == {p1, p2}
 
 
 def test_shortlist_embedder_mismatch_is_empty(test_db):

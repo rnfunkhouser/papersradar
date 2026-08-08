@@ -174,6 +174,11 @@ MIGRATIONS = [
      "ALTER TABLE users ADD COLUMN interest_flavors_json TEXT DEFAULT '[]'"),
     ("users", "interest_negatives_json",
      "ALTER TABLE users ADD COLUMN interest_negatives_json TEXT DEFAULT '[]'"),
+    # briefing ordering tiebreak (2026-08): the shortlist's embedding relevance
+    # for this (user, paper), captured at judge time. NULL on legacy rows —
+    # the briefings stage backfills rows that can still enter a briefing.
+    ("judgments", "relevance",
+     "ALTER TABLE judgments ADD COLUMN relevance REAL"),
 ]
 
 

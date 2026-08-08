@@ -122,12 +122,13 @@ def stage_shortlist_judge(con):
         prof = appdb.get_profile(con, user["id"])
         if not prof:
             continue
-        paper_ids = shortlist_for_user(con, user)
-        if not paper_ids:
+        shortlisted = shortlist_for_user(con, user)      # [(paper_id, relevance)]
+        if not shortlisted:
             out.append({"user": user["email"], "queued": 0})
             continue
+        relevance = dict(shortlisted)
         papers = [dict(con.execute("SELECT * FROM papers WHERE id=?", (pid,)).fetchone())
-                  for pid in paper_ids]
+                  for pid, _ in shortlisted]
         up, down = _recent_vote_titles(con, user["id"])
         system = judging.build_prompt(prof, up, down)
         version = prof["version"]
@@ -143,10 +144,11 @@ def stage_shortlist_judge(con):
             for p, v in zip(group, verdicts):
                 con.execute(
                     "INSERT OR REPLACE INTO judgments(user_id, paper_id, "
-                    "profile_version, fit, flavors_json, why, provider, judged_at) "
-                    "VALUES(?,?,?,?,?,?,?,?)",
+                    "profile_version, fit, flavors_json, why, provider, "
+                    "relevance, judged_at) VALUES(?,?,?,?,?,?,?,?,?)",
                     (user["id"], p["id"], version, v["fit"],
-                     json.dumps(v["facets"]), v["why"], served, appdb.now()))
+                     json.dumps(v["facets"]), v["why"], served,
+                     relevance.get(p["id"]), appdb.now()))
                 judged += 1
             con.commit()
         out.append({"user": user["email"], "queued": len(papers), "judged": judged})

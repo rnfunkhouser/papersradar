@@ -53,10 +53,14 @@ def _load_matrix(rows):
     return ids, mat / norms
 
 
-def shortlist_for_user(con, user, embedder_name: str | None = None) -> list[int]:
-    """Paper ids for this user's judge queue: top `shortlist_size` windowed,
-    abstract-having papers by relevance, excluding papers already judged under
-    the user's current profile version. Empty if the user has no seed vectors."""
+def shortlist_for_user(con, user,
+                       embedder_name: str | None = None) -> list[tuple[int, float]]:
+    """(paper_id, relevance) pairs for this user's judge queue, relevance
+    descending: top `shortlist_size` windowed, abstract-having papers,
+    excluding papers already judged under the user's current profile version.
+    Empty if the user has no seed vectors. The relevance is persisted into
+    judgments.relevance at judge time — briefings use it to order papers
+    within a fit band."""
     from app import db as appdb
     embedder_name = embedder_name or cfg("EMBEDDER")
     prof = appdb.get_profile(con, user["id"])
@@ -88,4 +92,4 @@ def shortlist_for_user(con, user, embedder_name: str | None = None) -> list[int]
     _, seeds = _load_matrix([(r["seed_id"], r["vector"]) for r in seed_rows])
     rel = relevance_scores(mat, seeds)
     order = sorted(range(len(ids)), key=lambda i: -float(rel[i]))
-    return [ids[i] for i in order[:size]]
+    return [(ids[i], float(rel[i])) for i in order[:size]]
