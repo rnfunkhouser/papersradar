@@ -72,4 +72,22 @@ def test_batch_judging_call_budget():
     calls_per_user = -(-shortlist // BATCH_SIZE)
     assert calls_per_user == 5
     groq_rpd = next(p["rpd"] for p in providers.PROVIDERS if p["name"] == "groq")
-    assert groq_rpd // calls_per_user == 200         # the DESIGN.md user ceiling
+    assert groq_rpd // calls_per_user == 200         # base DESIGN.md user ceiling
+
+    # WITH priority journals maxed out (worst case): +PRIORITY_JOURNAL_MAX_PER_USER
+    # guaranteed slots -> 50 papers -> 7 calls/user/day -> ~142 users on Groq
+    # alone (fallbacks push it back up; steady state is far cheaper because
+    # judgments are cached). See DESIGN.md par.5.
+    from app.config import cfg_int
+    worst = shortlist + cfg_int("PRIORITY_JOURNAL_MAX_PER_USER")
+    calls_worst = -(-worst // BATCH_SIZE)
+    assert calls_worst == 7
+    assert groq_rpd // calls_worst == 142
+
+
+def test_coach_budget_is_bounded_per_user():
+    """Coach endpoints add at most COACH_DAILY_LIMIT chat calls/user/day on
+    top of judging — bounded, shared across all coach modes, and visible in
+    the same provider_usage counters the admin page reads."""
+    from app.config import cfg_int
+    assert cfg_int("COACH_DAILY_LIMIT") == 10

@@ -323,3 +323,31 @@ code { background: var(--brand-soft); color: var(--brand-soft-text);
 }
 .datebar span.cur { background: var(--brand-soft); color: var(--brand-soft-text);
   border-color: transparent; font-weight: 700; }
+
+/* --- priority journals, coach, audit (2026-08 batch) ----------------------- */
+.pj-badge { font-size: 13px; color: var(--brand); margin: 4px 0; }
+.journal-results { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+.journal-hit { text-align: left; border: 1px solid var(--line);
+  background: transparent; border-radius: 8px; padding: 7px 10px; cursor: pointer;
+  color: inherit; font-size: 14px; }
+.journal-hit:hover { border-color: var(--brand); }
+.journal-hit.on { opacity: 0.55; cursor: default; }
+.coach-box { margin: 12px 0; }
+.coach-results { margin-top: 10px; }
+.coach-results h4 { margin: 10px 0 4px; font-size: 13px; text-transform: uppercase;
+  letter-spacing: 0.04em; opacity: 0.75; }
+.coach-note { position: relative; border: 1px solid var(--line);
+  border-left: 3px solid var(--brand); border-radius: 8px;
+  padding: 8px 30px 8px 10px; margin: 6px 0; font-size: 14px; }
+.coach-note.flag { border-left-color: #b45309; }
+.coach-note .coach-dismiss { position: absolute; top: 6px; right: 8px; border: 0;
+  background: transparent; cursor: pointer; color: inherit; opacity: 0.6; }
+.ai-draft-banner { border-left: 3px solid var(--brand); }
+.audit-proposal { border: 1px solid var(--line); border-radius: 10px;
+  padding: 12px; margin: 10px 0; font-size: 14px; }
+.audit-proposal .ap-target { font-weight: 600; font-size: 13px;
+  text-transform: uppercase; letter-spacing: 0.04em; opacity: 0.75; }
+.audit-proposal .ap-current { opacity: 0.8; margin-top: 6px; }
+.audit-proposal .ap-suggested { margin-top: 6px; }
+.audit-proposal .ap-why { font-style: italic; opacity: 0.85; margin-top: 6px; }
+.audit-proposal .ap-papers { margin: 6px 0 0 18px; opacity: 0.85; }

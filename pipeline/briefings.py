@@ -40,10 +40,14 @@ def select_items(con, user) -> list:
     if not prof:
         return []
     min_fit = cfg_int("BRIEFING_MIN_FIT")
-    max_items = cfg_int("BRIEFING_MAX_ITEMS")
+    # per-user briefing size (5-10, set in onboarding/settings); NULL = global
+    max_items = user["briefing_size"] or cfg_int("BRIEFING_MAX_ITEMS")
     return con.execute(
-        "SELECT p.*, j.fit, j.flavors_json, j.why FROM judgments j "
+        "SELECT p.*, j.fit, j.flavors_json, j.why, "
+        "COALESCE(pj.display_name, '') AS pj_name FROM judgments j "
         "JOIN papers p ON p.id = j.paper_id "
+        "LEFT JOIN priority_journals pj ON pj.user_id = j.user_id "
+        "     AND pj.source_id = p.source_id AND p.source_id != '' "
         "WHERE j.user_id=? AND j.profile_version=? AND j.fit >= ? "
         "AND j.paper_id NOT IN (SELECT paper_id FROM briefing_items WHERE user_id=?) "
         "ORDER BY j.fit DESC, COALESCE(j.relevance, 0) DESC, p.pub_date DESC LIMIT ?",
@@ -101,6 +105,23 @@ def build_briefing(con, user, date: str) -> list:
     return rows
 
 
+EMAIL_EXCERPT_CHARS = 700
+
+
+def email_excerpt(text: str, limit: int = EMAIL_EXCERPT_CHARS) -> str:
+    """Abstract excerpt for the email card — never cut mid-sentence (same rule
+    as the abstract cap at ingest); falls back to a word boundary + ellipsis."""
+    text = (text or "").strip()
+    if len(text) <= limit:
+        return text
+    cut = text[:limit]
+    end = max(cut.rfind(". "), cut.rfind(".\n"), cut.rfind("? "), cut.rfind("! "))
+    if end > limit * 0.4:
+        return cut[:end + 1]
+    sp = cut.rfind(" ")
+    return (cut[:sp] if sp > 0 else cut) + " …"
+
+
 def render_email(user, rows, date: str) -> str:
     from app import auth
     base = cfg("BASE_URL").rstrip("/")
@@ -114,17 +135,31 @@ def render_email(user, rows, date: str) -> str:
                             for f in json.loads(r["flavors_json"] or "[]"))
         authors = ", ".join(json.loads(r["authors_json"] or "[]")[:6])
         link = f"{base}/out/{r['id']}?ctx=email"
+        try:
+            pj_name = r["pj_name"]
+        except (KeyError, IndexError):
+            pj_name = ""
+        pj_line = ""
+        if pj_name:
+            pj_line = (f'<div style="color:#3730a3;font-size:12px;margin:4px 0">'
+                       f'from <i>{html.escape(pj_name)}</i> — your priority list</div>')
+        excerpt = email_excerpt(r["abstract"] or "")
+        more = ""
+        if excerpt != (r["abstract"] or "").strip():
+            more = (f' <a href="{base}/more/{r["id"]}" style="color:#1a56db">'
+                    f'Full summary on your dashboard &rarr;</a>')
         cards.append(f"""
         <div style="border:1px solid #e2e8f0;border-radius:10px;padding:16px;margin:0 0 14px">
           <div style="font-size:16px;font-weight:600;line-height:1.4">
             <a href="{link}" style="color:#1a56db;text-decoration:none">{html.escape(r['title'])}</a></div>
           <div style="color:#64748b;font-size:13px;margin:4px 0">{html.escape(authors)}
             · <i>{html.escape(r['venue'] or '')}</i> · {html.escape(r['pub_date'] or '')}</div>
+          {pj_line}
           <div style="margin:6px 0"><span style="background:#eef2ff;color:#3730a3;
             border-radius:99px;padding:2px 10px;font-size:12px;font-weight:600">
             {r['fit']:g}/10{(' · ' + html.escape(flavors)) if flavors else ''}</span></div>
           <div style="color:#334155;font-size:14px;font-style:italic">{html.escape(r['why'] or '')}</div>
-          <div style="color:#475569;font-size:13px;margin-top:8px">{html.escape((r['abstract'] or '')[:600])}{'…' if len(r['abstract'] or '') > 600 else ''}</div>
+          <div style="color:#475569;font-size:13px;margin-top:8px">{html.escape(excerpt)}{more}</div>
         </div>""")
     return f"""
     <div style="font-family:system-ui,-apple-system,sans-serif;max-width:640px;margin:0 auto;padding:8px">

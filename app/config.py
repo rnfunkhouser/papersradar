@@ -38,6 +38,20 @@ _DEFAULTS = {
     "BRIEFING_MAX_ITEMS": "8",
     "GATHER_WINDOW_DAYS": "4",
     "OPENALEX_MAX_PER_CONCEPT": "800",
+    # Priority journals: papers from a user's chosen journals get guaranteed
+    # judge slots when their embedding relevance is at or above this percentile
+    # of the user's windowed pool (chosen empirically — see
+    # analysis/priority_journal_threshold.md), capped at MAX_PER_USER extra
+    # slots per day ON TOP of JUDGE_SHORTLIST_PER_USER.
+    "PRIORITY_JOURNAL_MIN_REL_PCTL": "60",
+    "PRIORITY_JOURNAL_MAX_PER_USER": "10",
+    # Max works pulled per priority journal per gather run
+    "OPENALEX_MAX_PER_JOURNAL": "100",
+    # AI profile coach: all coach modes (autofill/suggestions/audit) share one
+    # per-user daily LLM-call budget
+    "COACH_DAILY_LIMIT": "10",
+    # Vote-informed profile audit unlocks at this many votes
+    "AUDIT_MIN_VOTES": "20",
 }
 
 _cache: dict | None = None

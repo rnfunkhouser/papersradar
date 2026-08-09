@@ -130,7 +130,8 @@ def stage_shortlist_judge(con):
         papers = [dict(con.execute("SELECT * FROM papers WHERE id=?", (pid,)).fetchone())
                   for pid, _ in shortlisted]
         up, down = _recent_vote_titles(con, user["id"])
-        system = judging.build_prompt(prof, up, down)
+        system = judging.build_prompt(prof, up, down,
+                                      western_focus=bool(user["western_context"]))
         version = prof["version"]
         judged = 0
         for i in range(0, len(papers), judging.BATCH_SIZE):

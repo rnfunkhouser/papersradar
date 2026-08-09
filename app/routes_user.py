@@ -94,18 +94,50 @@ def _spawn_profile_build(uid: int):
 
 # --- onboarding --------------------------------------------------------------
 
-N_STEPS = 6                       # about, describe, topics, negatives, seeds, review
-SEEDS_STEP = 5
+# about, describe, topics, negatives, journals, seeds, review
+N_STEPS = 7
+JOURNALS_STEP = 5
+SEEDS_STEP = 6
+
+
+def _coach_draft(con, uid: int) -> dict | None:
+    row = con.execute("SELECT draft_json FROM coach_drafts WHERE user_id=?",
+                      (uid,)).fetchone()
+    if not row:
+        return None
+    try:
+        return json.loads(row["draft_json"])
+    except ValueError:
+        return None
 
 
 def _onboarding_ctx(con, user, step: int, error: str = "", notice: str = "",
                     zotero_preview: bool = False):
+    from app.config import cfg_int
+    from app.routes_journals import user_priority_journals
     from app.routes_zotero import link_ctx
     seeds = con.execute("SELECT * FROM seeds WHERE user_id=? ORDER BY id",
                         (user["id"],)).fetchall()
     ctx = {"step": step, "n_steps": N_STEPS, "seeds": seeds, "min_seeds": MIN_SEEDS,
+           "default_briefing_size": cfg_int("BRIEFING_MAX_ITEMS"),
            "flavors": _user_flavors(user), "negatives": _user_negatives(user),
-           "error": error, "notice": notice, "znext": f"/onboarding?step={step}"}
+           "priority_journals": user_priority_journals(con, user["id"]),
+           "coach_draft": _coach_draft(con, user["id"]),
+           "draft_statement": "",
+           "error": error, "notice": notice,
+           "znext": f"/onboarding?step={step}",
+           "jnext": f"/onboarding?step={JOURNALS_STEP}"}
+    # AI-drafted profile (coach autofill): PREFILL only — the draft becomes the
+    # user's saved text exclusively when they submit each editor step.
+    if ctx["coach_draft"]:
+        d = ctx["coach_draft"]
+        ctx["draft_statement"] = str(d.get("core_statement") or "")
+        if not ctx["flavors"]:
+            ctx["flavors"] = [{"name": str(f.get("name") or ""),
+                               "description": str(f.get("description") or ""),
+                               "core": False} for f in d.get("flavors") or []]
+        if not ctx["negatives"]:
+            ctx["negatives"] = [str(n) for n in d.get("negatives") or []]
     ctx.update(link_ctx(con, user["id"],
                         want_preview=zotero_preview and step == SEEDS_STEP))
     return ctx
@@ -143,9 +175,38 @@ def onboarding(request: Request, step: int = 0, zerr: str = "", znotice: str = "
         con.close()
 
 
+def _parse_briefing_size(raw: str):
+    """'' -> None (global default); else clamp to the allowed 5-10 range."""
+    raw = (raw or "").strip()
+    if not raw:
+        return None
+    try:
+        return max(5, min(10, int(raw)))
+    except ValueError:
+        return None
+
+
+def _set_geo_scope(con, user, on: bool) -> None:
+    """Persist the Western-context flag. The soft half of the option lives in
+    the judge PROMPT, so when the flag changes for a user who already has a
+    judge profile, the profile version is bumped — cached verdicts from the
+    other prompt must not mix, exactly like any other criteria edit."""
+    if bool(user["western_context"]) == on:
+        return
+    con.execute("UPDATE users SET western_context=? WHERE id=?",
+                (1 if on else 0, user["id"]))
+    prof = db.get_profile(con, user["id"])
+    if prof:
+        from pipeline.build_profile import bump_version
+        db.save_profile(con, user["id"], prof, bump_version())
+    con.commit()
+
+
 @router.post("/onboarding/about")
 def onboarding_about(request: Request, name: str = Form(""),
-                     frequency: str = Form("daily")):
+                     frequency: str = Form("daily"),
+                     briefing_size: str = Form(""),
+                     western_context: str = Form("")):
     con = db.connect()
     try:
         user = get_user(request, con)
@@ -158,9 +219,11 @@ def onboarding_about(request: Request, name: str = Form(""),
                           status_code=400)
         if frequency not in ("daily", "weekly", "none"):
             frequency = "daily"
-        con.execute("UPDATE users SET name=?, frequency=? WHERE id=?",
-                    (name, frequency, user["id"]))
+        con.execute("UPDATE users SET name=?, frequency=?, briefing_size=? WHERE id=?",
+                    (name, frequency, _parse_briefing_size(briefing_size),
+                     user["id"]))
         con.commit()
+        _set_geo_scope(con, user, western_context == "1")
         return RedirectResponse("/onboarding?step=2", status_code=303)
     finally:
         con.close()
@@ -229,7 +292,7 @@ def onboarding_negatives(request: Request, negative: list[str] = Form([])):
         con.execute("UPDATE users SET interest_negatives_json=? WHERE id=?",
                     (json.dumps(negs), user["id"]))
         con.commit()
-        return RedirectResponse(f"/onboarding?step={SEEDS_STEP}", status_code=303)
+        return RedirectResponse(f"/onboarding?step={JOURNALS_STEP}", status_code=303)
     finally:
         con.close()
 
@@ -342,11 +405,14 @@ def dashboard(request: Request, date: str = "", welcome: str = ""):
             items = con.execute(
                 "SELECT p.*, b.rank, b.fit AS b_fit, j.flavors_json, j.why, "
                 "MAX(j.judged_at) AS _newest_judgment, "     # deterministic row pick
-                "COALESCE(f.vote, '') AS vote "
+                "COALESCE(f.vote, '') AS vote, "
+                "COALESCE(pj.display_name, '') AS pj_name "
                 "FROM briefing_items b "
                 "JOIN papers p ON p.id = b.paper_id "
                 "LEFT JOIN judgments j ON j.paper_id = b.paper_id AND j.user_id = b.user_id "
                 "LEFT JOIN feedback f ON f.paper_id = b.paper_id AND f.user_id = b.user_id "
+                "LEFT JOIN priority_journals pj ON pj.user_id = b.user_id "
+                "     AND pj.source_id = p.source_id AND p.source_id != '' "
                 "WHERE b.user_id=? AND b.date=? "
                 "GROUP BY p.id ORDER BY b.rank", (user["id"], sel)).fetchall()
         cards = []
@@ -360,6 +426,7 @@ def dashboard(request: Request, date: str = "", welcome: str = ""):
                             for f in json.loads(r["flavors_json"] or "[]")],
                 "why": r["why"] or "", "abstract": r["abstract"] or "",
                 "vote": r["vote"],
+                "priority_journal": r["pj_name"] or "",
             })
         n_seeds = con.execute("SELECT COUNT(*) c FROM seeds WHERE user_id=?",
                               (user["id"],)).fetchone()["c"]
@@ -397,12 +464,28 @@ def feedback(request: Request, paper_id: int = Form(...), vote: str = Form("")):
         con.close()
 
 
+# Sources whose papers live on a preprint server: their DOIs are often not
+# yet registered with Crossref when we link them (verified live: a fresh
+# PsyArXiv DOI 404s on doi.org while its oa_url resolves), so prefer the
+# hosting page and keep the DOI as fallback. Journal-published papers keep
+# DOI-first. Mirrors pipeline.gather's source values ('arxiv' + OSF providers).
+PREPRINT_SOURCES = {"arxiv", "socarxiv", "psyarxiv"}
+
+
+def outbound_url(paper) -> str:
+    doi_url = f"https://doi.org/{paper['doi']}" if paper["doi"] else ""
+    oa = paper["oa_url"] or ""
+    if (paper["source"] or "").lower() in PREPRINT_SOURCES:
+        return oa or doi_url or "/dashboard"
+    return doi_url or oa or "/dashboard"
+
+
 @router.get("/out/{paper_id}")
 def out(request: Request, paper_id: int, ctx: str = "dashboard"):
     con = db.connect()
     try:
         user = get_user(request, con)
-        paper = con.execute("SELECT doi, oa_url FROM papers WHERE id=?",
+        paper = con.execute("SELECT doi, oa_url, source FROM papers WHERE id=?",
                             (paper_id,)).fetchone()
         if not paper:
             return RedirectResponse("/dashboard", status_code=303)
@@ -412,9 +495,24 @@ def out(request: Request, paper_id: int, ctx: str = "dashboard"):
                         (user["id"], paper_id, db.now(),
                          ctx if ctx in ("dashboard", "email") else "dashboard"))
             con.commit()
-        url = (f"https://doi.org/{paper['doi']}" if paper["doi"]
-               else (paper["oa_url"] or "/dashboard"))
-        return RedirectResponse(url, status_code=302)
+        return RedirectResponse(outbound_url(paper), status_code=302)
+    finally:
+        con.close()
+
+
+@router.get("/more/{paper_id}")
+def more(request: Request, paper_id: int):
+    """Email 'Full summary on your dashboard' link: log the click under its
+    own context, then land on the paper's card anchor."""
+    con = db.connect()
+    try:
+        user = get_user(request, con)
+        if user:
+            con.execute("INSERT INTO clicks(user_id, paper_id, ts, context) "
+                        "VALUES(?,?,?,'email-more')",
+                        (user["id"], paper_id, db.now()))
+            con.commit()
+        return RedirectResponse(f"/dashboard#paper-{paper_id}", status_code=302)
     finally:
         con.close()
 
@@ -423,6 +521,8 @@ def out(request: Request, paper_id: int, ctx: str = "dashboard"):
 
 def _settings_ctx(con, user, error: str = "", notice: str = "",
                   zotero_preview: bool = False):
+    from app.config import cfg_int
+    from app.routes_journals import user_priority_journals
     from app.routes_zotero import link_ctx
     prof = db.get_profile(con, user["id"]) or {}
     seeds = con.execute("SELECT * FROM seeds WHERE user_id=? ORDER BY id",
@@ -436,9 +536,29 @@ def _settings_ctx(con, user, error: str = "", notice: str = "",
         for f in prof.get("flavors", [])
         if f.get("key") != "my_research_interests"]
     negatives = _user_negatives(user) or list(prof.get("negatives", []))
+    n_votes = con.execute(
+        "SELECT COUNT(*) c FROM feedback WHERE user_id=? AND vote != ''",
+        (user["id"],)).fetchone()["c"]
+    audits = con.execute(
+        "SELECT * FROM profile_audits WHERE user_id=? ORDER BY id DESC LIMIT 5",
+        (user["id"],)).fetchall()
+    latest_audit = None
+    if audits:
+        try:
+            parsed = json.loads(audits[0]["proposals_json"])
+            latest_audit = {"created_at": audits[0]["created_at"],
+                            "summary": parsed.get("summary", ""),
+                            "proposals": parsed.get("proposals", [])}
+        except ValueError:
+            pass
     ctx = {"prof": prof, "seeds": seeds, "flavors": flavors,
            "negatives": negatives,
-           "error": error, "notice": notice, "znext": "/settings"}
+           "priority_journals": user_priority_journals(con, user["id"]),
+           "n_votes": n_votes, "audit_min_votes": cfg_int("AUDIT_MIN_VOTES"),
+           "audits": audits, "latest_audit": latest_audit,
+           "default_briefing_size": cfg_int("BRIEFING_MAX_ITEMS"),
+           "error": error, "notice": notice,
+           "znext": "/settings", "jnext": "/settings"}
     ctx.update(link_ctx(con, user["id"], want_preview=zotero_preview))
     return ctx
 
@@ -459,7 +579,8 @@ def settings(request: Request, zerr: str = "", znotice: str = "", zpreview: str 
 
 @router.post("/settings/account")
 def settings_account(request: Request, name: str = Form(""),
-                     frequency: str = Form("daily")):
+                     frequency: str = Form("daily"),
+                     briefing_size: str = Form("")):
     con = db.connect()
     try:
         user = get_user(request, con)
@@ -467,13 +588,38 @@ def settings_account(request: Request, name: str = Form(""),
             return login_redirect()
         if frequency not in ("daily", "weekly", "none"):
             frequency = "daily"
-        con.execute("UPDATE users SET name=?, frequency=? WHERE id=?",
-                    (name.strip()[:120] or user["name"], frequency, user["id"]))
+        con.execute("UPDATE users SET name=?, frequency=?, briefing_size=? WHERE id=?",
+                    (name.strip()[:120] or user["name"], frequency,
+                     _parse_briefing_size(briefing_size), user["id"]))
         con.commit()
         user = db.get_user(con, user["id"])
         request.state.user = user
         return render(request, "settings.html",
                       _settings_ctx(con, user, notice="Account settings saved."))
+    finally:
+        con.close()
+
+
+@router.post("/settings/scope")
+def settings_scope(request: Request, western_context: str = Form("")):
+    """Western-context toggle — same behavior as from onboarding: if the flag
+    changes, the judge prompt changes, so the profile version bumps and the
+    current window is re-judged on the next run."""
+    con = db.connect()
+    try:
+        user = get_user(request, con)
+        if not user:
+            return login_redirect()
+        changed = bool(user["western_context"]) != (western_context == "1")
+        _set_geo_scope(con, user, western_context == "1")
+        user = db.get_user(con, user["id"])
+        request.state.user = user
+        notice = "Scope saved."
+        if changed:
+            notice = ("Scope saved. Papers will be re-judged under the new "
+                      "scope on the next run.")
+        return render(request, "settings.html",
+                      _settings_ctx(con, user, notice=notice))
     finally:
         con.close()
 

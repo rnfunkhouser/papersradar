@@ -1,0 +1,10 @@
+{# "Get suggestions on my draft": posts the surrounding form's current fields
+   to /coach/suggest (missing pieces fall back to saved values server-side)
+   and renders dismissible notes. Suggestions only — nothing is applied
+   automatically. #}
+<div class="coach-box" data-coach>
+  <button type="button" class="btn btn-ghost coach-suggest">Get suggestions on my draft</button>
+  <span class="hint">An AI coach reads your draft and your seed papers, then
+    suggests sharpenings — nothing changes unless you edit it yourself.</span>
+  <div class="coach-results" hidden aria-live="polite"></div>
+</div>

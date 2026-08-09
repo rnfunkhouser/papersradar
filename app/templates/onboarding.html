@@ -8,7 +8,8 @@
   </div>
   <div class="step-label">Step {{ step }} of {{ n_steps }} ·
     {{ ["About you", "Describe your research", "Topics & intersections",
-        "Not interested", "Seed papers", "Review & launch"][step - 1] }}</div>
+        "Not interested", "Priority journals", "Seed papers",
+        "Review & launch"][step - 1] }}</div>
 
   {% if notice %}<div class="notice">{{ notice }}</div>{% endif %}
   {% if error %}<div class="error">{{ error }}</div>{% endif %}
@@ -25,12 +26,40 @@
         <option value="weekly" {% if user.frequency == 'weekly' %}selected{% endif %}>Weekly (Mondays)</option>
         <option value="none" {% if user.frequency == 'none' %}selected{% endif %}>Don't email me — I'll use the dashboard</option>
       </select>
-      <p class="hint">You can change this any time in Settings.</p>
+      <label>How many papers per briefing?</label>
+      <select name="briefing_size">
+        <option value="" {% if not user.briefing_size %}selected{% endif %}>Standard (up to {{ default_briefing_size }})</option>
+        {% for n in range(5, 11) %}
+          <option value="{{ n }}" {% if user.briefing_size == n %}selected{% endif %}>Up to {{ n }}</option>
+        {% endfor %}
+      </select>
+      <p class="hint">Only papers that clear your fit bar make the briefing —
+        this sets the ceiling, not a quota.</p>
+      <label style="display:flex;gap:8px;align-items:flex-start;margin-top:14px">
+        <input type="checkbox" name="western_context" value="1" style="width:auto;margin-top:3px"
+               {% if user.western_context %}checked{% endif %}>
+        <span>Focus my briefings on Western-context research</span>
+      </label>
+      <p class="hint">Research from every region and context matters, and a
+        healthy literature includes all of those voices. At the same time, broad
+        geographic coverage can make a daily briefing less relevant for some
+        researchers' specific work — that's the only reason this option exists.
+        When it's on, papers from venues based outside North America, Western,
+        Northern and Southern Europe, Australia and New Zealand are filtered
+        out, and papers focused on non-Western contexts are weighed somewhat
+        lower — though strong, highly relevant work can still make your
+        briefing. Off by default; change it any time in Settings.</p>
+      <p class="hint">You can change any of this any time in Settings.</p>
       <button class="btn" type="submit" style="margin-top:14px">Continue</button>
     </form>
   </div>
 
   {% elif step == 2 %}
+  {% if coach_draft %}
+  <div class="notice ai-draft-banner"><strong>AI draft — edit to make it
+    yours.</strong> These fields were drafted from your seed papers. Nothing is
+    saved until you review and continue through each step.</div>
+  {% endif %}
   <div class="panel">
     <h3>Describe your research in a few sentences</h3>
     <div class="field-note">
@@ -43,15 +72,26 @@
     {% set example_part = "core" %}{% include "_founder_example.html" %}
     <form method="post" action="/onboarding/interests">
       <label>Your research, in a few sentences</label>
-      <textarea name="statement" rows="7" placeholder="I study how ... I'm especially interested in ... Papers about X in general are background noise; what I care about is ...">{{ user.interest_statement }}</textarea>
+      <textarea name="statement" rows="7" placeholder="I study how ... I'm especially interested in ... Papers about X in general are background noise; what I care about is ...">{{ user.interest_statement or draft_statement }}</textarea>
+      {% include "_coach_suggest.html" %}
       <button class="btn" type="submit" style="margin-top:14px">Continue</button>
     </form>
+    {% if not user.interest_statement and not coach_draft %}
+    <p class="hint" style="margin-top:12px">Not sure where to start? If you
+      <a href="/onboarding?step=6">add your seed papers first</a>, we can
+      draft this whole section from them and you just edit.</p>
+    {% endif %}
   </div>
   <div style="margin:18px 0">
     <a class="btn btn-ghost" href="/onboarding?step=1">Back</a>
   </div>
 
   {% elif step == 3 %}
+  {% if coach_draft %}
+  <div class="notice ai-draft-banner"><strong>AI draft — edit to make it
+    yours.</strong> Topics below were drafted from your seed papers — rename,
+    rewrite or remove them freely; nothing is saved until you continue.</div>
+  {% endif %}
   <div class="panel">
     <h3>Your topics &amp; intersections</h3>
     <div class="field-note">
@@ -66,6 +106,7 @@
     {% set example_part = "flavors" %}{% include "_founder_example.html" %}
     <form method="post" action="/onboarding/flavors">
       {% include "_flavor_editor.html" %}
+      {% include "_coach_suggest.html" %}
       <button class="btn" type="submit" style="margin-top:14px">Continue</button>
     </form>
   </div>
@@ -74,6 +115,11 @@
   </div>
 
   {% elif step == 4 %}
+  {% if coach_draft %}
+  <div class="notice ai-draft-banner"><strong>AI draft — edit to make it
+    yours.</strong> These candidate exclusions were drafted from your seed
+    papers — keep only the ones that ring true.</div>
+  {% endif %}
   <div class="panel">
     <h3>What you're <em>not</em> interested in</h3>
     <div class="field-note">
@@ -85,6 +131,7 @@
     {% set example_part = "negatives" %}{% include "_founder_example.html" %}
     <form method="post" action="/onboarding/negatives">
       {% include "_negatives_editor.html" %}
+      {% include "_coach_suggest.html" %}
       <button class="btn" type="submit" style="margin-top:14px">Continue</button>
     </form>
   </div>
@@ -93,6 +140,24 @@
   </div>
 
   {% elif step == 5 %}
+  <div class="panel">
+    <h3>Journals you never want to miss</h3>
+    <div class="field-note">
+      Optional. Pick the journals whose new papers you'd always want screened —
+      your field's flagship outlets, or a favorite niche journal. We fetch
+      <strong>every new paper</strong> these journals publish (even ones our
+      seed-based search wouldn't have found), and any that sit reasonably close
+      to your interests get a <strong>guaranteed spot</strong> in front of the
+      AI judge. Picks from these journals are labeled in your briefing.
+    </div>
+    {% include "_journals_editor.html" %}
+  </div>
+  <div style="display:flex;justify-content:space-between;margin:18px 0">
+    <a class="btn btn-ghost" href="/onboarding?step=4">Back</a>
+    <a class="btn" href="/onboarding?step=6">Continue{% if not priority_journals %} (skip){% endif %}</a>
+  </div>
+
+  {% elif step == 6 %}
   <div class="panel">
     <h3>Add seed papers</h3>
     <div class="field-note">
@@ -118,7 +183,7 @@ The title of a paper also works"></textarea>
           <span class="v">{{ s.doi or 'no DOI' }}</span>
           <form method="post" action="/onboarding/seeds/remove" style="display:inline">
             <input type="hidden" name="seed_id" value="{{ s.id }}">
-            <input type="hidden" name="next" value="/onboarding?step=5">
+            <input type="hidden" name="next" value="/onboarding?step=6">
             <button type="submit" title="Remove">&#10005;</button>
           </form>
         </div>
@@ -126,19 +191,31 @@ The title of a paper also works"></textarea>
     {% endif %}
   </div>
 
+  {% if seeds|length >= min_seeds %}
+  <div class="panel">
+    <h3>Want a head start on your criteria?</h3>
+    <p class="hint">We can draft your research description, topics and
+      exclusions <strong>from these seed papers</strong> — you land back in the
+      editor to make every word yours before anything is saved.</p>
+    <form method="post" action="/coach/autofill">
+      <button class="btn btn-ghost" type="submit">Draft my profile from my seed papers</button>
+    </form>
+  </div>
+  {% endif %}
+
   {% include "zotero_widget.html" %}
 
   <div style="display:flex;justify-content:space-between;margin:18px 0">
-    <a class="btn btn-ghost" href="/onboarding?step=4">Back</a>
+    <a class="btn btn-ghost" href="/onboarding?step=5">Back</a>
     {% if seeds|length >= min_seeds %}
-      <a class="btn" href="/onboarding?step=6">Continue</a>
+      <a class="btn" href="/onboarding?step=7">Continue</a>
     {% else %}
       <span class="hint" style="align-self:center">Add at least {{ min_seeds }} seeds to continue
         ({{ seeds|length }} so far)</span>
     {% endif %}
   </div>
 
-  {% elif step == 6 %}
+  {% elif step == 7 %}
   <div class="panel">
     <h3>How your radar will work</h3>
     <p style="margin:10px 0">Two stages, every morning:</p>
@@ -152,12 +229,19 @@ The title of a paper also works"></textarea>
       and your {{ negatives|length }} exclusion{{ 's' if negatives|length != 1 }} —
       and scores its <strong>fit</strong> from 0–10 with a one-sentence rationale.
       Only the best make your briefing.</p>
+    {% if priority_journals %}
+    <p style="margin:8px 0"><strong>Plus:</strong> every new paper from your
+      {{ priority_journals|length }} priority
+      journal{{ 's' if priority_journals|length != 1 }} is fetched daily; the
+      ones close enough to your interests get guaranteed judge slots and are
+      labeled in your briefing.</p>
+    {% endif %}
     <p style="margin:8px 0"><strong>You stay in charge:</strong> thumbs-up/down any pick
       and the judge treats it as a boundary example the very next day. Edit your
       criteria any time in Settings — every scoring rule is plain English you can read.</p>
   </div>
   <div style="display:flex;justify-content:space-between;margin:18px 0">
-    <a class="btn btn-ghost" href="/onboarding?step=5">Back</a>
+    <a class="btn btn-ghost" href="/onboarding?step=6">Back</a>
     <form method="post" action="/onboarding/finish">
       <button class="btn btn-lg" type="submit">Launch my radar</button>
     </form>

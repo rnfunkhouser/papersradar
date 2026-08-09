@@ -70,31 +70,73 @@ def union_concepts(con) -> list[str]:
     return [c for c, _ in sorted(counts.items(), key=lambda kv: -kv[1])]
 
 
-def harvest_openalex(concepts: list[str], since: str,
-                     max_per_concept: int | None = None) -> list[dict]:
+def _page_works(filter_extra: str, since: str, cap: int) -> list[dict]:
+    """Cursor-page one /works filter query, newest first, up to `cap`."""
     base = cfg("OPENALEX_BASE").rstrip("/")
     mailto = urllib.parse.quote(cfg("OPENALEX_MAILTO"))
+    out = []
+    cursor, pulled = "*", 0
+    while cursor and pulled < cap:
+        url = (f"{base}/works?filter=from_publication_date:{since},"
+               f"{filter_extra},type:article,language:en"
+               f"&per-page={OPENALEX_PER_PAGE}&sort=publication_date:desc"
+               f"&cursor={urllib.parse.quote(cursor)}&mailto={mailto}")
+        data = openalex.get_json(url)
+        if not data:
+            break
+        results = data.get("results", [])
+        out.extend(openalex.parse_work(w) for w in results)
+        pulled += len(results)
+        cursor = (data.get("meta") or {}).get("next_cursor")
+        if not results:
+            break
+        time.sleep(0.2)
+    return out
+
+
+def harvest_openalex(concepts: list[str], since: str,
+                     max_per_concept: int | None = None) -> list[dict]:
     cap = max_per_concept or cfg_int("OPENALEX_MAX_PER_CONCEPT")
     out = []
     for cid in concepts:
         short = cid.rsplit("/", 1)[-1]
-        cursor, pulled = "*", 0
-        while cursor and pulled < cap:
-            url = (f"{base}/works?filter=from_publication_date:{since},"
-                   f"concepts.id:{short},type:article,language:en"
-                   f"&per-page={OPENALEX_PER_PAGE}&sort=publication_date:desc"
-                   f"&cursor={urllib.parse.quote(cursor)}&mailto={mailto}")
-            data = openalex.get_json(url)
-            if not data:
-                break
-            results = data.get("results", [])
-            out.extend(openalex.parse_work(w) for w in results)
-            pulled += len(results)
-            cursor = (data.get("meta") or {}).get("next_cursor")
-            if not results:
-                break
-            time.sleep(0.2)
+        out.extend(_page_works(f"concepts.id:{short}", since, cap))
     return out
+
+
+def priority_journal_ids(con) -> list[str]:
+    """Union of ALL users' priority journals (shared gather cost)."""
+    return [r["source_id"] for r in con.execute(
+        "SELECT DISTINCT source_id FROM priority_journals ORDER BY source_id")]
+
+
+def harvest_priority_journals(con, since: str) -> list[dict]:
+    """Recent works from every user's priority journals. These may sit outside
+    the concept-derived queries entirely, so they are fetched explicitly and
+    deduped into the shared corpus like any other source."""
+    cap = cfg_int("OPENALEX_MAX_PER_JOURNAL")
+    out = []
+    for sid in priority_journal_ids(con):
+        out.extend(_page_works(f"primary_location.source.id:{sid}", since, cap))
+    return out
+
+
+def enrich_sources(con) -> int:
+    """Fill the sources table (incl. country_code, used by the Western-context
+    venue filter) for venue ids seen on papers but not fetched yet — works
+    responses carry only dehydrated sources without a country."""
+    missing = [r["source_id"] for r in con.execute(
+        "SELECT DISTINCT source_id FROM papers WHERE source_id != '' "
+        "AND source_id NOT IN (SELECT id FROM sources)")]
+    if not missing:
+        return 0
+    n = 0
+    for src in openalex.fetch_sources_by_id(missing):
+        if src.get("id"):
+            appdb.upsert_source(con, src)
+            n += 1
+    con.commit()
+    return n
 
 
 def harvest_arxiv(since: str) -> list[dict]:
@@ -206,7 +248,10 @@ def run(con, since: str | None = None) -> dict:
     n_oa = insert_new(con, recs)
     n_ax = insert_new(con, harvest_arxiv(since))
     n_osf = insert_new(con, harvest_osf(since))
+    n_pj = insert_new(con, harvest_priority_journals(con, since))
+    n_src = enrich_sources(con)
     summary = {"since": since, "concepts": len(concepts),
-               "new_openalex": n_oa, "new_arxiv": n_ax, "new_osf": n_osf}
+               "new_openalex": n_oa, "new_arxiv": n_ax, "new_osf": n_osf,
+               "new_priority_journal": n_pj, "sources_enriched": n_src}
     print(f"[gather] {summary}", file=sys.stderr)
     return summary

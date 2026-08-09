@@ -48,12 +48,16 @@ placeholder is retired).
   login on a fresh install: `pipeline/import_owner.py` creates the admin, and
   the link also appears in the app log — documented in DEPLOY.md.
 
-### Onboarding wizard (`/onboarding`, steps 1–6, progress bar)
+### Onboarding wizard (`/onboarding`, steps 1–7, progress bar)
 Each step explains itself in plain language for a non-technical academic.
 Steps 2–4 are the STRUCTURED interest editor (2026-08): each carries a
 "Want to see a full example?" expander showing the founder's real profile
 (hardcoded in `app/founder_example.py`).
-1. **About you** — name, how often to email (daily / weekly / dashboard-only).
+1. **About you** — name, how often to email (daily / weekly / dashboard-only),
+   papers-per-briefing (5–10, blank = global default), and the per-user
+   **Western-context scope option** (default OFF, with a respectful paragraph
+   on why it exists; hard venue filter + soft judge deprioritization — see
+   app/geo.py).
 2. **Describe your research** — a few sentences, "as you would to a sharp PhD
    student outside your subfield" → the profile's `core_statement`.
 3. **Topics & intersections** — repeatable entries (short name + 1–3 sentence
@@ -67,7 +71,11 @@ Steps 2–4 are the STRUCTURED interest editor (2026-08): each carries a
    (`interest_flavors_json` / `interest_negatives_json`, migrated on
    connect); legacy users with only `interest_statement` keep the fallback +
    LLM-drafted-flavors path.
-5. **Seed papers** — paste DOIs or titles (3 minimum, ~10–100 ideal); each is
+5. **Priority journals** (optional) — autocomplete against the OpenAlex
+   sources API; chosen journals are always gathered and close-enough papers
+   (≥ the 60th relevance percentile of the user's pool) get guaranteed judge
+   slots, labeled in briefings.
+6. **Seed papers** — paste DOIs or titles (3 minimum, ~10–100 ideal); each is
    looked up on OpenAlex and shown back (title/venue/year) for confirm/remove.
    Explained: "Seeds steer the *Gathering* stage — we search the areas your
    seeds live in and shortlist new papers that sit close to them."
@@ -87,7 +95,7 @@ Steps 2–4 are the STRUCTURED interest editor (2026-08): each carries a
    (HMAC-SHA256 keystream keyed off APP_SECRET) and are NEVER rendered back
    to the browser; settings offers "refresh from Zotero" and disconnect
    (disconnect keeps imported seeds).
-6. **Review & finish** — shows the drafted setup; explains the two stages
+7. **Review & finish** — shows the drafted setup; explains the two stages
    (Gathering casts the net from your seeds; Selection is an AI judge reading
    every shortlisted abstract against your criteria and scoring fit 0–10 with
    a one-sentence rationale) and what "flavors" are (named sub-interests the
@@ -109,13 +117,39 @@ the chip as well). Archive of past briefing days. Quiet-day state and
 "pipeline hasn't run yet" state.
 
 ### Settings (`/settings`)
-Edit name, email frequency; edit Selection Criteria with the SAME structured
-editor as onboarding (core statement, topic entries with core stars,
+Full parity with onboarding (tested in tests/test_settings_parity.py): edit
+name, email frequency, papers-per-briefing, the Western-context scope
+(toggling re-queues judging exactly like a criteria edit), priority journals
+(same autocomplete/endpoints as onboarding); edit Selection Criteria with the
+SAME structured editor as onboarding (core statement, topic entries with core stars,
 exclusions, optional hand-written fit rule — bumps profile version, which
 discards that user's judgment cache exactly like `judge.py`); add/remove
 seed papers (re-runs profile build); DELETE ACCOUNT (type DELETE to confirm
 → `db.delete_user_cascade` removes every per-user row, incl. hashed login
 tokens and the encrypted Zotero key; shared corpus papers stay).
+
+### AI profile coach (three modes, all rate-limited)
+All coach LLM calls go through the same provider router and quota counters as
+judging; `COACH_DAILY_LIMIT` (10) calls/user/day shared across modes
+(`coach_usage` table). Nothing a coach produces is ever applied
+automatically.
+- **Seed-based autofill** (onboarding seeds step): one call over seed
+  titles+abstracts drafts core statement + 3–6 intersection-style flavors +
+  candidate negatives → stored in `coach_drafts`, PREFILLS the editor under
+  an "AI draft — edit to make it yours" banner; saving happens only when the
+  user submits each editor step.
+- **Suggestions on my draft** (interest steps + settings criteria): the open
+  editor's current fields (falling back to saved values) + seed titles → 2–4
+  clarifying questions, concrete rephrasings (naming theories/frameworks
+  visible in seeds but absent from the text), and too-vague flags — rendered
+  as dismissible notes beside the editor.
+- **Vote-informed audit** (settings, unlocks at `AUDIT_MIN_VOTES`=20 votes):
+  one call over profile + seeds + vote evidence (downvotes judged fit≥7 with
+  the judge's why, upvotes at fit≤4, per-flavor vote counts) → specific
+  current→suggested wording edits citing motivating papers (the single-user
+  system's wording_proposals.md methodology, automated). History lives in
+  `profile_audits`; repeat audits see the previous one and focus on what
+  changed.
 
 ### Privacy & email surface
 `/privacy` states, verified against the code: what is stored (email,
@@ -174,6 +208,13 @@ clicks           id, user_id, paper_id, ts, context
 provider_usage   date, provider, ok_count, err_count, last_detail, last_ts
                  UNIQUE(date, provider)               (quota counters, admin-visible)
 pipeline_runs    id, stage, started_at, finished_at, status, detail
+sources          id (OpenAlex S...), display_name, country_code, type, fetched_at
+priority_journals user_id, source_id, display_name, country_code, added_at
+                 UNIQUE(user_id, source_id)
+coach_usage      user_id, date, count            UNIQUE(user_id, date)
+coach_drafts     user_id UNIQUE, draft_json, created_at
+profile_audits   id, user_id, created_at, n_votes, proposals_json, provider
+data_migrations  name UNIQUE, applied_at        (one-shot data fix-ups)
 email_ingest     id, user_id, msg_id, received_at, from_addr, subject, raw_path,
                  parsed_json, status                  -- RESERVED: per-user inbound
                  -- email (Scholar-alert forwarding). Schema exists; nothing
@@ -201,28 +242,50 @@ row per stage. Stages, in order:
    concepts, LLM-draft flavors if missing.
 2. **gather** — OpenAlex per-concept cursor paging over the UNION of all
    users' retrieval concepts (deduped), polite-pool `mailto`, plus arXiv +
-   SocArXiv/PsyArXiv; window `--since` (default 4 days back; first run
-   backfills 14). Noise/type/language filters from `harvest.keep()`. Dedupe
-   against `papers.key`; insert new rows only.
+   SocArXiv/PsyArXiv, plus recent works from the union of ALL users'
+   **priority journals** (they may fall outside concept queries); window
+   `--since` (default 4 days back; first run backfills 14). Noise/type/
+   language filters from `harvest.keep()`. Dedupe against `papers.key`;
+   insert new rows only. Afterwards, venue ids new to the `sources` table are
+   batch-enriched from the OpenAlex sources API (country_code powers the
+   Western-context filter).
 3. **embed** — corpus papers missing a vector for the active embedder →
    batched (64/request) OpenRouter nemotron calls, RPM-paced, daily-cap-aware
    (stops cleanly at the cap; next run resumes). Shared across all users.
 4. **shortlist** — per user: cosine of each windowed paper vs the user's seed
    vectors (mean of top-3 nearest seeds, minus 0.3 × similarity to the pool
    centroid — the validated `contrast="pool"` recipe), take top
-   `shortlist_size` not yet judged under the current profile version.
+   `shortlist_size` not yet judged under the current profile version. Users
+   with the Western-context option ON have papers from venues with a KNOWN
+   non-Broad-West country excluded from the pool (app/geo.py; unknown venues
+   stay). Papers from the user's priority journals then get up to
+   `PRIORITY_JOURNAL_MAX_PER_USER` ADDITIONAL guaranteed slots when their
+   relevance is at or above the `PRIORITY_JOURNAL_MIN_REL_PCTL` (60th)
+   percentile of that user's windowed pool — the rule and level were chosen
+   empirically against 79 owner-rated papers; see
+   analysis/priority_journal_threshold.md.
 5. **judge** — per user: batched 8-papers-per-call through the provider
    router (Groq `openai/gpt-oss-120b` primary — the validated 5/5-identical
    recipe — then Gemini flash, Cerebras, OpenRouter). EXACT `judge.py`
    prompt: same system prompt builder (profile + recent-vote boundary
    examples), same per-paper user message, same strict-JSON parse, the
-   Phase-C batch instruction block, temperature 0.0. Verdicts →
+   Phase-C batch instruction block, temperature 0.0. Users with the
+   Western-context option ON get one appended soft instruction (non-Western
+   topical focus moderately lowers fit as ONE consideration; strong papers
+   can still score well) — the flag is part of the prompt, so toggling it
+   bumps the user's profile version exactly like a criteria edit. Verdicts →
    `judgments`, cached per profile version.
 6. **briefings** — per user due today (daily users every day; weekly users on
    Monday): pick judged-but-never-briefed papers with fit ≥ `BRIEFING_MIN_FIT`
-   (default 6), top `BRIEFING_MAX_ITEMS` (default 8) → `briefing_items` →
-   dashboard shows it; email digest via SMTP abstraction (silently
-   dashboard-only when SMTP unset).
+   (default 6), top `users.briefing_size` (per-user 5-10 override, NULL =
+   `BRIEFING_MAX_ITEMS`, default 8) → `briefing_items` → dashboard shows it;
+   email digest via SMTP abstraction (silently dashboard-only when SMTP
+   unset). Priority-journal picks are labeled on both surfaces; email
+   abstracts are sentence-safe excerpts with a "Full summary on your
+   dashboard" deep link (`/more/<id>` logs context email-more →
+   `/dashboard#paper-<id>`). Preprint-hosted papers link to their hosting
+   page first (fresh preprint DOIs are often unregistered), journal papers
+   DOI-first.
 
 `pipeline/build_profile.py --user <id|email>` is independently runnable (also
 invoked by the web app on onboarding/settings change).
@@ -242,11 +305,17 @@ ryan.n.funkhouser@gmail.com, admin) from the old repo's
 | Cerebras chat (1M tok/day) | judge fallback | ~+1,500 verdicts/day when active |
 
 Worst case (every shortlisted paper new, shortlist=40): 5 judge calls per
-user per day → **~200 users on Groq alone**, ~250+ with fallbacks. Steady
-state is far cheaper because judgments are cached per paper. The binding knob
-is `JUDGE_SHORTLIST_PER_USER` (default 40; per-user override column). The
-embedding stage is shared, so user count doesn't touch it; the real embedding
-bound is corpus size per day, which the gather window/paging caps control.
+user per day → **~200 users on Groq alone**, ~250+ with fallbacks. WITH
+priority journals maxed out (+`PRIORITY_JOURNAL_MAX_PER_USER`=10 guaranteed
+slots → 50 papers → 7 calls/user/day) the ceiling is **~142 users on Groq
+alone** — still fallback-padded, and steady state is far cheaper because
+judgments are cached per paper. The AI profile coach adds at most
+`COACH_DAILY_LIMIT` (10) user-triggered chat calls/user/day, counted in the
+same provider_usage counters. The binding knob is `JUDGE_SHORTLIST_PER_USER`
+(default 40; per-user override column). The embedding stage is shared, so
+user count doesn't touch it; the real embedding bound is corpus size per day,
+which the gather window/paging caps control. Priority-journal gathering adds
+≤`OPENALEX_MAX_PER_JOURNAL` works/journal/day to that corpus.
 
 ## 6. Server fit (1 GB RAM)
 

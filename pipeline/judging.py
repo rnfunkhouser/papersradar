@@ -17,10 +17,16 @@ TEMPERATURE = 0.0            # determinism: same paper + same profile -> same ve
 BATCH_SIZE = 8               # papers per judge call (validated batch size)
 
 
-def build_prompt(profile: dict, extra_pos=(), extra_neg=()) -> str:
+def build_prompt(profile: dict, extra_pos=(), extra_neg=(),
+                 western_focus: bool = False) -> str:
     """System prompt for the judge — verbatim contract from judge.py.
     extra_pos/extra_neg are recent voted titles, appended AFTER the curated
-    exemplars so fresh feedback speaks last."""
+    exemplars so fresh feedback speaks last.
+
+    western_focus (per-user option, default OFF) appends the soft geographic-
+    scope instruction (app.geo.WESTERN_SOFT_PROMPT). Because it changes the
+    prompt, toggling the option bumps the user's profile version (see
+    routes_user._set_geo_scope) so cached verdicts never mix."""
     negs = "\n".join(f"- {n}" for n in profile.get("negatives", []))
     pos = list(profile.get("positive_exemplar_titles", [])) + \
         [f"{t} (recent 👍)" for t in list(extra_pos)[:MAX_VOTE_EXAMPLES]]
@@ -63,6 +69,10 @@ INTERSECTION RULE: {profile.get('intersection_rule', '')}
 
 Score fit: 9-10 intersection of >=2 core facets is the topic; 7-8 one core facet
 plus real engagement of a second; 4-6 solid single-facet; 1-3 tangential; 0 off-target."""
+    geo = ""
+    if western_focus:
+        from app.geo import WESTERN_SOFT_PROMPT
+        geo = "\n" + WESTERN_SOFT_PROMPT.strip() + "\n"
     return f"""You screen new academic papers for one specific researcher.
 
 RESEARCHER PROFILE:
@@ -78,7 +88,7 @@ PAPERS THE RESEARCHER REJECTED OR DOWNGRADED:
 {neg_s}
 
 {rubric}
-
+{geo}
 Respond with STRICT JSON only, no prose around it:
 {{"facets": ["<engaged flavor keys>"], "fit": <0-10>, "why": "<ONE short sentence>"}}"""
 

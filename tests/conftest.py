@@ -21,7 +21,8 @@ os.environ["SMTP_HOST"] = ""              # dev mode
 # --- stub OpenAlex + Zotero API ---------------------------------------------
 
 def make_work(doi: str, title: str, abstract: str = "",
-              concepts=("https://openalex.org/C1",), venue: str = "Test Journal"):
+              concepts=("https://openalex.org/C1",), venue: str = "Test Journal",
+              source_id: str = "S1"):
     inv = {}
     for i, w in enumerate(abstract.split()):
         inv.setdefault(w, []).append(i)
@@ -30,7 +31,7 @@ def make_work(doi: str, title: str, abstract: str = "",
         "doi": f"https://doi.org/{doi}",
         "title": title, "display_name": title,
         "primary_location": {"source": {"display_name": venue,
-                                        "id": "https://openalex.org/S1",
+                                        "id": f"https://openalex.org/{source_id}",
                                         "type": "journal"}},
         "authorships": [{"author": {"id": "https://openalex.org/A1",
                                     "display_name": "Ada Author"},
@@ -54,6 +55,25 @@ WORKS = {
     "10.1000/gamma": make_work("10.1000/gamma", "Bridging divides with dialogue",
                                "Cross partisan conversations reduce animosity in a "
                                "field experiment."),
+}
+
+# OpenAlex sources fixtures: autocomplete + batched id lookups.
+SOURCES = [
+    {"id": "https://openalex.org/S1", "display_name": "Test Journal",
+     "country_code": "US", "type": "journal"},
+    {"id": "https://openalex.org/S10", "display_name": "Journal of Communication",
+     "country_code": "US", "type": "journal"},
+    {"id": "https://openalex.org/S20", "display_name": "Asian Journal of Communication",
+     "country_code": "SG", "type": "journal"},
+]
+
+# A work that only a priority-journal query can find (its concepts don't match
+# the users' retrieval concepts).
+PJ_WORKS = {
+    "S10": make_work("10.1000/delta", "Media framing dynamics in election campaigns",
+                     "A panel study of framing effects during election campaigns.",
+                     concepts=("https://openalex.org/C99",),
+                     venue="Journal of Communication", source_id="S10"),
 }
 
 ZOTERO_ITEMS = [
@@ -96,10 +116,28 @@ class _StubHandler(BaseHTTPRequestHandler):
             term = (q.get("search") or [""])[0].lower()
             hits = [w for w in WORKS.values() if term[:20] in w["title"].lower()]
             return self._json({"results": hits[:1]})
+        # OpenAlex: priority-journal gather (source-filtered works)
+        m = re.search(r"primary_location\.source\.id:(S\w+)", path)
+        if path.startswith("/works?") and m:
+            w = PJ_WORKS.get(m.group(1))
+            return self._json({"results": [w] if w else [],
+                               "meta": {"next_cursor": None}})
         # OpenAlex: gather filter query
         if path.startswith("/works?") and "filter=" in path:
             return self._json({"results": list(WORKS.values()),
                                "meta": {"next_cursor": None}})
+        # OpenAlex: sources autocomplete
+        if path.startswith("/sources?") and "search=" in path:
+            q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            term = (q.get("search") or [""])[0].lower()
+            hits = [s for s in SOURCES if term[:20] in s["display_name"].lower()]
+            return self._json({"results": hits})
+        # OpenAlex: batched source id lookup
+        m = re.search(r"/sources\?filter=ids\.openalex:([^&]+)", path)
+        if m:
+            wanted = set(m.group(1).split("|"))
+            hits = [s for s in SOURCES if s["id"].rsplit("/", 1)[-1] in wanted]
+            return self._json({"results": hits})
         # Zotero: collections
         if re.search(r"/(users|groups)/\d+/collections", path):
             return self._json([{"key": "COLL1", "data": {"name": "My Papers"}}])

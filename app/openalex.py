@@ -139,6 +139,42 @@ def lookup(text: str) -> dict | None:
     return None
 
 
+def parse_source(s: dict) -> dict:
+    """OpenAlex source (journal/repository) -> our sources-table shape."""
+    return {
+        "id": (s.get("id") or "").rsplit("/", 1)[-1],
+        "display_name": clean_text(s.get("display_name") or ""),
+        "country_code": (s.get("country_code") or "").upper(),
+        "type": s.get("type") or "",
+    }
+
+
+def search_sources(q: str, limit: int = 8) -> list[dict]:
+    """Journal autocomplete against the OpenAlex sources API. Full source
+    objects here DO carry country_code (works responses don't)."""
+    q = (q or "").strip()
+    if len(q) < 2:
+        return []
+    base = cfg("OPENALEX_BASE").rstrip("/")
+    data = get_json(f"{base}/sources?search={urllib.parse.quote(q[:120])}"
+                    f"&per-page={limit}&mailto={_mailto()}")
+    return [parse_source(s) for s in (data or {}).get("results") or []]
+
+
+def fetch_sources_by_id(ids: list[str]) -> list[dict]:
+    """Batched source lookups (<=50 ids per call) — fills sources.country_code
+    for venues that arrived via works (dehydrated, no country)."""
+    out = []
+    base = cfg("OPENALEX_BASE").rstrip("/")
+    ids = [i for i in ids if i]
+    for i in range(0, len(ids), 50):
+        chunk = "|".join(ids[i:i + 50])
+        data = get_json(f"{base}/sources?filter=ids.openalex:{chunk}"
+                        f"&per-page=50&mailto={_mailto()}")
+        out.extend(parse_source(s) for s in (data or {}).get("results") or [])
+    return out
+
+
 def _norm_title(t: str) -> str:
     return re.sub(r"[^a-z0-9 ]+", "", (t or "").lower()).strip()
 

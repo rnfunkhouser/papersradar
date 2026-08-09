@@ -24,11 +24,14 @@ def create_app() -> FastAPI:
                   logging.FileHandler(log_dir() / "web.log")])
     application = FastAPI(title="Research Radar", docs_url=None, redoc_url=None,
                           openapi_url=None)
-    from app import routes_public, routes_user, routes_admin, routes_zotero
+    from app import (routes_admin, routes_coach, routes_journals, routes_public,
+                     routes_user, routes_zotero)
     application.include_router(routes_public.router)
     application.include_router(routes_user.router)
     application.include_router(routes_admin.router)
     application.include_router(routes_zotero.router)
+    application.include_router(routes_journals.router)
+    application.include_router(routes_coach.router)
     application.mount("/static",
                       StaticFiles(directory=str(Path(__file__).parent / "static")),
                       name="static")

@@ -62,8 +62,11 @@ def fallback_profile(name: str, statement: str) -> dict:
 
 
 def bump_version() -> str:
+    # microseconds included so two edits inside the same second (e.g. saving
+    # criteria then toggling the geo scope) can never share a version — the
+    # judgment cache keys on this string
     import datetime as dt
-    return dt.datetime.now().strftime("%Y-%m-%d-%H%M%S")
+    return dt.datetime.now().strftime("%Y-%m-%d-%H%M%S.%f")
 
 
 # --- structured onboarding -> judge profile ----------------------------------

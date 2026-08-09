@@ -17,8 +17,52 @@
         <option value="weekly" {% if user.frequency == 'weekly' %}selected{% endif %}>Weekly (Mondays)</option>
         <option value="none" {% if user.frequency == 'none' %}selected{% endif %}>Dashboard only</option>
       </select>
+      <label>Papers per briefing</label>
+      <select name="briefing_size">
+        <option value="" {% if not user.briefing_size %}selected{% endif %}>Standard (up to {{ default_briefing_size }})</option>
+        {% for n in range(5, 11) %}
+          <option value="{{ n }}" {% if user.briefing_size == n %}selected{% endif %}>Up to {{ n }}</option>
+        {% endfor %}
+      </select>
+      <p class="hint">Applies to the dashboard briefing and the email digest.
+        Only papers that clear your fit bar are included — this sets the
+        ceiling, not a quota. Currently:
+        up to {{ user.briefing_size or default_briefing_size }} per day.</p>
       <button class="btn" type="submit" style="margin-top:14px">Save account</button>
     </form>
+  </div>
+
+  <div class="panel">
+    <h3>Geographic scope</h3>
+    <form method="post" action="/settings/scope">
+      <label style="display:flex;gap:8px;align-items:flex-start">
+        <input type="checkbox" name="western_context" value="1" style="width:auto;margin-top:3px"
+               {% if user.western_context %}checked{% endif %}>
+        <span>Focus my briefings on Western-context research</span>
+      </label>
+      <p class="hint">Research from every region and context matters, and a
+        healthy literature includes all of those voices. At the same time, broad
+        geographic coverage can make a daily briefing less relevant for some
+        researchers' specific work — that's the only reason this option exists.
+        When it's on, papers from venues based outside North America, Western,
+        Northern and Southern Europe, Australia and New Zealand are filtered
+        out, and papers focused on non-Western contexts are weighed somewhat
+        lower — though strong, highly relevant work can still make your
+        briefing. Toggling this re-judges the current window of papers on the
+        next run.</p>
+      <button class="btn" type="submit" style="margin-top:10px">Save scope</button>
+    </form>
+  </div>
+
+  <div class="panel">
+    <h3>Priority journals ({{ priority_journals|length }})</h3>
+    <p class="hint">Journals whose new papers you never want to miss — your
+      field's flagship outlets, or a favorite niche journal. We fetch
+      <strong>every new paper</strong> they publish (even ones the seed-based
+      search wouldn't find), and any that sit reasonably close to your
+      interests get a <strong>guaranteed spot</strong> in front of the AI
+      judge. Picks from these journals are labeled in your briefing.</p>
+    {% include "_journals_editor.html" %}
   </div>
 
   <div class="panel">
@@ -47,8 +91,58 @@
       <p class="hint">Leave blank to use the default rule (a paper squarely inside
         one topic is a bullseye; connecting several is even better).</p>
       <textarea name="fit_rule" rows="3">{{ prof.fit_rule or '' }}</textarea>
+      {% include "_coach_suggest.html" %}
       <button class="btn" type="submit" style="margin-top:14px">Save criteria</button>
     </form>
+  </div>
+
+  <div class="panel" id="profile-audit">
+    <h3>Profile audit</h3>
+    {% if n_votes < audit_min_votes %}
+      <p class="hint">The audit compares your Selection Criteria against your
+        <strong>votes</strong>: papers you thumbed down that the judge scored
+        high, papers you thumbed up that it scored low, and how each topic is
+        performing. It unlocks once you've voted on
+        <strong>{{ audit_min_votes }}</strong> papers, so it has real evidence
+        to work from — you've voted on {{ n_votes }} so far. Keep voting on
+        your briefings and this will light up.</p>
+      <button class="btn" disabled>Run profile audit</button>
+    {% else %}
+      <p class="hint">One AI pass over your criteria, your seeds, and your
+        {{ n_votes }} votes — it proposes specific wording edits
+        (current &rarr; suggested), citing the papers that motivate each.
+        Nothing is applied automatically: take the ones you agree with into the
+        Selection Criteria editor above.</p>
+      <form method="post" action="/coach/audit">
+        <button class="btn" type="submit">Run profile audit</button>
+      </form>
+    {% endif %}
+    {% if latest_audit %}
+      <div style="margin-top:16px">
+        <h4>Latest audit — {{ latest_audit.created_at[:10] }}</h4>
+        {% if latest_audit.summary %}<p class="hint">{{ latest_audit.summary }}</p>{% endif %}
+        {% for prop in latest_audit.proposals %}
+        <div class="audit-proposal">
+          <div class="ap-target">{{ prop.target }}</div>
+          {% if prop.current %}<div class="ap-current"><strong>Current:</strong> {{ prop.current }}</div>{% endif %}
+          <div class="ap-suggested"><strong>Suggested:</strong> {{ prop.suggested }}</div>
+          {% if prop.rationale %}<div class="ap-why">{{ prop.rationale }}</div>{% endif %}
+          {% if prop.motivating_papers %}
+          <ul class="ap-papers">
+            {% for mp in prop.motivating_papers %}<li>{{ mp }}</li>{% endfor %}
+          </ul>
+          {% endif %}
+        </div>
+        {% endfor %}
+        <p class="hint">Apply edits you agree with in the
+          <a href="#top">Selection Criteria editor above</a>.</p>
+      </div>
+    {% endif %}
+    {% if audits|length > 1 %}
+      <p class="hint" style="margin-top:10px">Past audits:
+        {% for a in audits[1:] %}{{ a.created_at[:10] }} ({{ a.n_votes }} votes){% if not loop.last %} · {% endif %}{% endfor %}
+        — each new audit sees the previous one and focuses on what changed.</p>
+    {% endif %}
   </div>
 
   <div class="panel">

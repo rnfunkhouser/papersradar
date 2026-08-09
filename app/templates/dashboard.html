@@ -17,10 +17,14 @@
   {% endif %}
 
   {% for c in cards %}
-  <div class="card" data-paper="{{ c.id }}" data-vote="{{ c.vote }}">
+  <div class="card" id="paper-{{ c.id }}" data-paper="{{ c.id }}" data-vote="{{ c.vote }}">
     <h2><a href="/out/{{ c.id }}" target="_blank" rel="noopener">{{ c.title }}</a></h2>
     <div class="meta">{{ c.authors }}{% if c.venue %} · <em>{{ c.venue }}</em>{% endif %}
       {% if c.date %} · {{ c.date }}{% endif %}</div>
+    {% if c.priority_journal %}
+    <div class="pj-badge" title="You marked this journal as a priority — close-enough papers from it always reach the judge.">from
+      <em>{{ c.priority_journal }}</em> — your priority list</div>
+    {% endif %}
     <span class="chip" title="An AI judge read this abstract against your Selection Criteria and scored its fit for you, 0–10. The tags are the interest flavors it engages.">
       <a href="/about-scores">{{ '%g' % c.fit }}/10{% if c.flavors %} · {{ c.flavors|join(', ') }}{% endif %}</a>
     </span>

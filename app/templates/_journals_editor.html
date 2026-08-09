@@ -1,0 +1,23 @@
+{# Priority-journal picker: current list + OpenAlex autocomplete.
+   Expects `priority_journals` (rows) and `jnext` (redirect-back path). #}
+<div class="journals-editor" data-jnext="{{ jnext }}">
+  {% if priority_journals %}
+    {% for j in priority_journals %}
+    <div class="seed-row">
+      <span class="t">{{ j.display_name or j.source_id }}</span>
+      <span class="v">{{ j.source_id }}{% if j.country_code %} · {{ j.country_code }}{% endif %}</span>
+      <form method="post" action="/journals/remove" style="display:inline">
+        <input type="hidden" name="source_id" value="{{ j.source_id }}">
+        <input type="hidden" name="next" value="{{ jnext }}">
+        <button type="submit" title="Remove">&#10005;</button>
+      </form>
+    </div>
+    {% endfor %}
+  {% endif %}
+  <label>Find a journal</label>
+  <input type="text" class="journal-q" placeholder="Start typing, e.g. Journal of Communication"
+         autocomplete="off">
+  <div class="journal-results" aria-live="polite"></div>
+  <p class="hint">We search OpenAlex's journal registry as you type — click a
+    result to add it.</p>
+</div>

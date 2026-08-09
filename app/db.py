@@ -379,6 +379,20 @@ def delete_user_cascade(con, uid: int) -> None:
     con.commit()
 
 
+def upsert_source(con, src: dict) -> None:
+    """Insert/refresh one OpenAlex source (journal) row. Empty country_code
+    never overwrites a known one (works-derived rows are dehydrated)."""
+    con.execute(
+        "INSERT INTO sources(id, display_name, country_code, type, fetched_at) "
+        "VALUES(?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET "
+        "display_name=excluded.display_name, "
+        "country_code=CASE WHEN excluded.country_code='' THEN sources.country_code "
+        "ELSE excluded.country_code END, "
+        "type=excluded.type, fetched_at=excluded.fetched_at",
+        (src["id"], src.get("display_name", ""),
+         (src.get("country_code") or "").upper(), src.get("type", ""), now()))
+
+
 def record_provider(con, provider: str, ok: bool, detail: str = "") -> int:
     """Bump today's counter for a provider; returns ok_count so far today."""
     con.execute(

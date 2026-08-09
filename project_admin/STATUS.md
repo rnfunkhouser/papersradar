@@ -54,3 +54,36 @@ reserved), local embedder swap, LLM prose summaries, feedback CSV export.
 - Deploy note: server .env SMTP_FROM display name should be updated to
   "Research Radar <no-reply@papersradar.com>"; set SOURCE_URL when the public
   repo exists.
+
+## 2026-08-09 — feature batch: coach, priority journals, geo scope, fixes
+
+- **AI profile coach** (app/coach.py, app/routes_coach.py; COACH_DAILY_LIMIT=10
+  calls/user/day shared across modes, counted in provider_usage):
+  seed-based autofill (draft prefills the editor under an "AI draft" banner,
+  never auto-saves), "Get suggestions on my draft" on every interest editor
+  (dismissible notes, nothing applied), and the vote-informed profile audit
+  in Settings (unlocks at AUDIT_MIN_VOTES=20; wording_proposals.md
+  methodology; history in profile_audits, repeat audits see the previous one).
+- **Priority journals**: onboarding step 5 + settings panel, OpenAlex sources
+  autocomplete; gather fetches all users' priority journals + enriches
+  sources.country_code; guaranteed judge slots when relevance ≥ the 60th
+  percentile of the user's windowed pool (empirical: 79 owner-rated papers,
+  analysis/priority_journal_threshold.md), capped at 10/user/day ON TOP of
+  the shortlist (worst-case ceiling now ~142 users on Groq alone); picks
+  labeled "from <journal> — your priority list" on dashboard + email.
+- **Western-context scope option** (per-user, default OFF, respectful copy):
+  hard filter of KNOWN non-Broad-West venues at the user's queue (app/geo.py,
+  UN M49 W/N/S Europe + US/CA/GB/IE/AU/NZ) + soft judge-prompt
+  deprioritization; the flag is part of the prompt so toggling bumps
+  profile_version (verdict caches never mix).
+- **Per-user briefing size** (5–10, users.briefing_size, NULL=global 8) in
+  onboarding + settings; applies to dashboard briefing and email digest.
+- **Settings parity** with onboarding enforced by tests/test_settings_parity.py
+  (every wizard field must have a settings control; new wizard inputs fail
+  the test until mapped).
+- **Fixes**: HTML entities decoded at ingest + one-shot legacy scrub
+  (data_migrations); preprint links prefer the hosting page over often-
+  unregistered DOIs; email abstracts are sentence-safe excerpts with a
+  "Full summary on your dashboard" deep link (/more/<id> → #paper-<id>);
+  sessions now 90 days; bump_version now microsecond-precise.
+- Tests: 102 passing, fully offline.

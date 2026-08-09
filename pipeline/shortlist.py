@@ -53,6 +53,14 @@ def _load_matrix(rows):
     return ids, mat / norms
 
 
+def _user_row_get(user, key):
+    """sqlite3.Row has no .get(); tolerate plain dicts in tests too."""
+    try:
+        return user[key]
+    except (KeyError, IndexError):
+        return None
+
+
 def shortlist_for_user(con, user,
                        embedder_name: str | None = None) -> list[tuple[int, float]]:
     """(paper_id, relevance) pairs for this user's judge queue, relevance
@@ -60,8 +68,19 @@ def shortlist_for_user(con, user,
     excluding papers already judged under the user's current profile version.
     Empty if the user has no seed vectors. The relevance is persisted into
     judgments.relevance at judge time — briefings use it to order papers
-    within a fit band."""
+    within a fit band.
+
+    Two per-user refinements:
+      - Western-context option ON -> papers whose venue has a KNOWN country
+        outside app.geo.BROAD_WEST_COUNTRIES are excluded from the pool
+        entirely (unknown-country venues are kept).
+      - Priority journals: up to PRIORITY_JOURNAL_MAX_PER_USER ADDITIONAL
+        papers from the user's priority journals are appended after the
+        normal top-N, when their relevance is at or above the
+        PRIORITY_JOURNAL_MIN_REL_PCTL percentile of this user's windowed
+        pool (see analysis/priority_journal_threshold.md)."""
     from app import db as appdb
+    from app.geo import BROAD_WEST_COUNTRIES
     embedder_name = embedder_name or cfg("EMBEDDER")
     prof = appdb.get_profile(con, user["id"])
     if not prof:
@@ -78,13 +97,22 @@ def shortlist_for_user(con, user,
         return []
 
     cutoff = (dt.date.today() - dt.timedelta(days=WINDOW_DAYS)).isoformat()
+    geo_sql = ""
+    if _user_row_get(user, "western_context"):
+        # exclude ONLY venues whose country is KNOWN and outside the Broad
+        # West; unknown venues/countries (preprints, unenriched) stay in
+        placeholders = ",".join("?" for _ in BROAD_WEST_COUNTRIES)
+        geo_sql = (" AND p.source_id NOT IN (SELECT id FROM sources "
+                   "WHERE country_code != '' AND country_code NOT IN "
+                   f"({placeholders}))")
     paper_rows = con.execute(
-        "SELECT p.id, pe.vector FROM papers p "
+        "SELECT p.id, p.source_id, pe.vector FROM papers p "
         "JOIN paper_embeddings pe ON pe.paper_id = p.id AND pe.embedder=? "
         "WHERE p.first_seen >= ? AND p.abstract != '' "
         "AND p.id NOT IN (SELECT paper_id FROM judgments "
-        "                 WHERE user_id=? AND profile_version=?)",
-        (embedder_name, cutoff, user["id"], version)).fetchall()
+        "                 WHERE user_id=? AND profile_version=?)" + geo_sql,
+        (embedder_name, cutoff, user["id"], version)
+        + (tuple(BROAD_WEST_COUNTRIES) if geo_sql else ())).fetchall()
     if not paper_rows:
         return []
 
@@ -92,4 +120,20 @@ def shortlist_for_user(con, user,
     _, seeds = _load_matrix([(r["seed_id"], r["vector"]) for r in seed_rows])
     rel = relevance_scores(mat, seeds)
     order = sorted(range(len(ids)), key=lambda i: -float(rel[i]))
-    return [(ids[i], float(rel[i])) for i in order[:size]]
+    picks = [(ids[i], float(rel[i])) for i in order[:size]]
+
+    # --- guaranteed priority-journal slots (additional to the top-N) ---------
+    pj_sources = {r["source_id"] for r in con.execute(
+        "SELECT source_id FROM priority_journals WHERE user_id=?",
+        (user["id"],)).fetchall()}
+    if pj_sources:
+        import numpy as np
+        floor = float(np.percentile(
+            np.asarray(rel, dtype=np.float32),
+            cfg_int("PRIORITY_JOURNAL_MIN_REL_PCTL")))
+        src_by_id = {r["id"]: r["source_id"] for r in paper_rows}
+        cap = cfg_int("PRIORITY_JOURNAL_MAX_PER_USER")
+        extra = [i for i in order[size:]
+                 if src_by_id[ids[i]] in pj_sources and float(rel[i]) >= floor]
+        picks.extend((ids[i], float(rel[i])) for i in extra[:cap])
+    return picks
