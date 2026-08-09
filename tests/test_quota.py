@@ -91,3 +91,41 @@ def test_coach_budget_is_bounded_per_user():
     the same provider_usage counters the admin page reads."""
     from app.config import cfg_int
     assert cfg_int("COACH_DAILY_LIMIT") == 10
+
+
+def test_openrouter_rpd_is_configurable(test_db, monkeypatch):
+    """OPENROUTER_RPD raises the account-dependent OpenRouter cap (50 plain
+    free -> 1,000 after a one-time $10 credit purchase) for BOTH enforcement
+    points: the embedder's cap check and the chat router's skip logic."""
+    from pipeline.embedder import NemotronEmbedder
+    monkeypatch.setenv("OPENROUTER_API_KEY", "k")
+    for env in ("GROQ_API_KEY", "GEMINI_API_KEY", "CEREBRAS_API_KEY"):
+        monkeypatch.setenv(env, "")
+    providers._CON = None
+    # default ships at the safe plain-free value
+    monkeypatch.delenv("OPENROUTER_RPD", raising=False)
+    assert NemotronEmbedder().rpd == 50
+    p_or = next(p for p in providers.PROVIDERS if p["name"] == "openrouter")
+    assert providers.provider_rpd(p_or) == 50
+    # upgraded account: env raises both
+    monkeypatch.setenv("OPENROUTER_RPD", "1000")
+    assert NemotronEmbedder().rpd == 1000
+    assert providers.provider_rpd(p_or) == 1000
+    # enforcement uses the knob: 50 used calls no longer trips either cap
+    test_db.execute(
+        "INSERT INTO provider_usage(date, provider, ok_count) VALUES(?,?,?)",
+        (appdb.today(), "openrouter", 50))
+    test_db.commit()
+    captured = {}
+
+    def fake_post(url, payload, key, timeout, provider=None):
+        captured["url"] = url
+        return {"choices": [{"message": {"content": "ok"}}]}
+    monkeypatch.setattr(providers, "_post_json", fake_post)
+    out, served = providers.chat("s", "u")
+    assert served == "openrouter" and out == "ok"
+    # and at the knob value the router refuses again
+    monkeypatch.setenv("OPENROUTER_RPD", "50")
+    with pytest.raises(providers.ProvidersUnavailable) as e:
+        providers.chat("s", "u")
+    assert "daily cap (50)" in str(e.value)

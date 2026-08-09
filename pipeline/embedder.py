@@ -6,8 +6,10 @@ vectors, and a config flip + backfill run migrates cleanly.
 
 Active embedders:
   nemotron-3-embed-1b   OpenRouter nvidia/nemotron-3-embed-1b:free (2048-d,
-                        API, 64 texts/request, 50 req/day free cap) — DEFAULT.
-                        Ported from the validated free_stack/api_embed.py.
+                        API, 64 texts/request, OPENROUTER_RPD req/day — 50 on
+                        a plain free account, 1,000 once the account has ever
+                        bought $10 credits) — DEFAULT. Ported from the
+                        validated free_stack/api_embed.py.
   qwen3-embedding-0.6b  local sentence-transformers Qwen/Qwen3-Embedding-0.6B
                         (1024-d). NOT for the 1 GB server today — enable via
                         EMBEDDER= once the box has RAM for torch.
@@ -50,8 +52,14 @@ class NemotronEmbedder:
     base = "https://openrouter.ai/api/v1"
     batch = 64
     rpm = 20
-    rpd = 50                      # OpenRouter free daily request cap
     _last = 0.0
+
+    @property
+    def rpd(self) -> int:
+        """OpenRouter daily request cap — account-dependent (50 plain free;
+        1,000 after a one-time $10 credit purchase), so a config knob."""
+        from app.config import cfg_int
+        return cfg_int("OPENROUTER_RPD")
 
     def _key(self) -> str:
         key = cfg("OPENROUTER_API_KEY").strip()

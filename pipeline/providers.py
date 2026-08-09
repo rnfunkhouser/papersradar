@@ -55,8 +55,18 @@ PROVIDERS = [
      "base": "https://openrouter.ai/api/v1",
      "env": "OPENROUTER_API_KEY",
      "model": "openrouter/free",
-     "rpm": 20, "rpd": 50},
+     "rpm": 20, "rpd": 50},        # actual cap via provider_rpd()/OPENROUTER_RPD
 ]
+
+
+def provider_rpd(p: dict) -> int:
+    """Daily request cap for a provider. OpenRouter's is account-dependent
+    (50 plain free; 1,000 once the account has ever bought $10 in credits),
+    so it is a config knob — OPENROUTER_RPD — not a hardcoded constant."""
+    if p["name"] == "openrouter":
+        from app.config import cfg_int
+        return cfg_int("OPENROUTER_RPD")
+    return p["rpd"]
 
 
 class ProvidersUnavailable(Exception):
@@ -192,8 +202,9 @@ def chat(system: str, user: str, model: str | None = None,
         if p["name"] in _BAD_KEY:
             errors.append(f"{p['name']}: key rejected earlier this run")
             continue
-        if calls_today(p["name"]) >= p["rpd"]:
-            errors.append(f"{p['name']}: daily cap ({p['rpd']}) reached")
+        rpd = provider_rpd(p)
+        if calls_today(p["name"]) >= rpd:
+            errors.append(f"{p['name']}: daily cap ({rpd}) reached")
             continue
         mdl = model or p["model"]
         payload = {"model": mdl, "temperature": temperature,
@@ -253,7 +264,7 @@ if __name__ == "__main__":
         for p in PROVIDERS:
             print(f"  {p['name']:<11} key={'YES' if present[p['name']] else 'no ':<3} "
                   f"default={p['model']:<28} rpm={p['rpm']:<3} "
-                  f"today={calls_today(p['name'])}/{p['rpd']}")
+                  f"today={calls_today(p['name'])}/{provider_rpd(p)}")
         sys.exit(0 if any(present.values()) else 1)
     elif "--test" in sys.argv:
         try:

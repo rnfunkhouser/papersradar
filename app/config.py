@@ -21,6 +21,11 @@ _DEFAULTS = {
     "CEREBRAS_API_KEY": "",
     "OPENROUTER_API_KEY": "",
     "EMBEDDER": "nemotron-3-embed-1b",
+    # OpenRouter free-model requests/day. 50 on a plain free account; a
+    # one-time $10 credit purchase permanently raises the account's cap to
+    # 1,000 — set OPENROUTER_RPD=1000 in .env on such accounts. Enforced for
+    # both the embed stage and the chat-router fallback accounting.
+    "OPENROUTER_RPD": "50",
     "SMTP_HOST": "",
     "SMTP_PORT": "587",
     "SMTP_USER": "",
