@@ -127,3 +127,24 @@ All deployed to papersradar.com and verified:
    GitHub Sponsors once repo public; owner's UIdaho profile v4 draft awaits
    his read + VPN-connected validation run (see new_papers_briefing/
    profile_review_2026-08-08/).
+
+## 2026-08-09 (night) — onboarding fork, technical About, archive, full-cap embedding
+Deployed + verified live:
+- Onboarding opens at a binary fork: "Start from my papers" (seeds first →
+  coach autofill prefills all criteria editors) vs "Write it myself" (manual);
+  same 7 shared steps, path stored in users.onboarding_path; audit confirmed
+  settings-only (regression test guards it). 114 tests.
+- /about is technical-first (4-stage pipeline visual, verified mechanics,
+  pointer to docs/how-it-works.md — auto-links when SOURCE_URL set); bio card
+  at bottom. docs/how-it-works.md = comprehensive every-decision methods doc.
+- /archive: per-user past briefings, month-grouped, searchable, votes live.
+- OPENROUTER_RPD knob (server .env = 1000 after owner's one-time $10);
+  backlog drained same night. Embedding strategy evaluation (see
+  new_papers_briefing/embedding_eval_2026-08-09/): verdict = stay on nemotron,
+  Cloudflare Workers AI as fallback, gte-small-on-Micro validated as escape
+  hatch, ARM + local Qwen3-0.6B still the only real quality upgrade (Mac does
+  the one-shot backfill), consider Oracle PAYG upgrade.
+- docs/setup-evaluation.md: top-5 wording/eliciting improvements (negatives
+  over-broadness warning, autofill seed sampling fix, exemplar elicitation,
+  de-founder the judge rubric band, bullseye/permission-clause patterns) —
+  PROPOSALS ONLY, awaiting owner's copy pass over docs/site-copy.md.
