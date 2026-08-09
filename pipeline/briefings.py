@@ -163,7 +163,7 @@ def render_email(user, rows, date: str) -> str:
         </div>""")
     return f"""
     <div style="font-family:system-ui,-apple-system,sans-serif;max-width:640px;margin:0 auto;padding:8px">
-      <h2 style="color:#1a56db;margin-bottom:2px">Research Radar</h2>
+      <h2 style="color:#1a56db;margin-bottom:2px"><img src="{base}/static/logo-email.png" width="28" height="28" alt="" style="vertical-align:-5px;margin-right:9px">Research Radar</h2>
       <div style="color:#64748b;margin-bottom:18px">{nice} · {len(rows)} picks for
         {html.escape(user['name'] or user['email'])}</div>
       {''.join(cards)}

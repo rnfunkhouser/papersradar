@@ -65,11 +65,22 @@ h1, h2, h3 { line-height: 1.25; letter-spacing: -0.015em; }
 .site-header .wrap { display: flex; align-items: center; gap: 18px; height: 60px; }
 .logo { font-weight: 800; font-size: 19px; color: var(--text); letter-spacing: -0.02em; }
 .logo:hover { text-decoration: none; }
-.logo .dot {
-  display: inline-block; width: 10px; height: 10px; border-radius: 99px;
-  background: linear-gradient(135deg, var(--brand), var(--brand-2));
-  margin-right: 7px;
+.logo { display: inline-flex; align-items: center; gap: 9px; }
+.logo .logo-mark { color: var(--brand); flex: none; }
+
+/* bottom-arc background: concentric half-circles rising from the page's end,
+   faded upward, behind the footer. Decorative only. */
+.page-arcs {
+  position: relative; height: 0; overflow: visible; pointer-events: none; z-index: 0;
 }
+.page-arcs svg {
+  position: absolute; bottom: -330px; left: 50%; transform: translateX(-50%);
+  width: 160vw; max-width: 2200px; color: var(--brand);
+  -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,.9), transparent 85%);
+  mask-image: linear-gradient(to top, rgba(0,0,0,.9), transparent 85%);
+}
+body { overflow-x: hidden; }
+.site-footer { position: relative; z-index: 1; }
 .nav { margin-left: auto; display: flex; align-items: center; gap: 16px; font-size: 14.5px; }
 .nav a { color: var(--text-2); font-weight: 500; }
 .nav a:hover { color: var(--text); text-decoration: none; }

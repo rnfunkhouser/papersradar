@@ -6,12 +6,14 @@
   <title>{% block title %}Research Radar{% endblock %}</title>
   <meta name="description" content="Your daily research radar — new papers that actually fit your interests, with a transparent AI rationale for every pick.">
   <link rel="stylesheet" href="/static/style.css">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='42' fill='%232563eb'/%3E%3Ccircle cx='50' cy='50' r='24' fill='none' stroke='white' stroke-width='7'/%3E%3Ccircle cx='50' cy='50' r='7' fill='white'/%3E%3C/svg%3E">
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32.png">
+  <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
 </head>
 <body>
 <header class="site-header">
   <div class="wrap">
-    <a class="logo" href="/"><span class="dot"></span>Research Radar</a>
+    <a class="logo" href="/"><svg class="logo-mark" width="22" height="22" viewBox="0 0 64 64" fill="none" aria-hidden="true"><circle cx="32" cy="32" r="4.5" fill="currentColor"/><path d="M20 44 A17 17 0 1 1 44 44" stroke="currentColor" stroke-width="4" stroke-linecap="round"/><path d="M14 50 A25.5 25.5 0 1 1 50 50" stroke="currentColor" stroke-width="4" stroke-linecap="round" opacity=".55"/></svg>Research Radar</a>
     <nav class="nav">
       {% if user %}
         <a href="/dashboard">Dashboard</a>
@@ -28,6 +30,16 @@
 <main>
   {% block content %}{% endblock %}
 </main>
+<div class="page-arcs" aria-hidden="true">
+  <svg viewBox="0 0 1200 340" fill="none" preserveAspectRatio="xMidYMax meet">
+    <path d="M40 340 A560 560 0 0 1 1160 340" stroke="currentColor" stroke-width="2" opacity=".28"/>
+    <path d="M170 340 A430 430 0 0 1 1030 340" stroke="currentColor" stroke-width="2" opacity=".2"/>
+    <path d="M300 340 A300 300 0 0 1 900 340" stroke="currentColor" stroke-width="2" opacity=".14"/>
+    <path d="M430 340 A170 170 0 0 1 770 340" stroke="currentColor" stroke-width="2" opacity=".09"/>
+    <circle cx="838" cy="120" r="5" fill="currentColor" opacity=".5"/>
+    <circle cx="420" cy="200" r="4" fill="currentColor" opacity=".3"/>
+  </svg>
+</div>
 <footer class="site-footer">
   Research Radar · a free tool built and run by a political-communication
   researcher at the University of Idaho ·
