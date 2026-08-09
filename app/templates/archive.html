@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Archive — Research Radar{% endblock %}
+{% block content %}
+<div class="wrap" style="max-width:820px">
+  <h1 class="page-title">Your briefing archive</h1>
+  {% if n_days %}
+  <p class="page-sub">{{ n_days }} briefing day{{ 's' if n_days != 1 }} ·
+    {{ n_items }} paper{{ 's' if n_items != 1 }} — every pick that ever made
+    your briefing stays here.</p>
+  {% endif %}
+
+  <form method="get" action="/archive" class="archive-search">
+    <input type="search" name="q" value="{{ q }}"
+           placeholder="Search your past picks — title, journal, author…"
+           aria-label="Search your archive">
+    <button class="btn" type="submit">Search</button>
+    {% if q or sel_date %}<a class="btn btn-ghost" href="/archive">Clear</a>{% endif %}
+  </form>
+
+  {% if q %}
+    <p class="page-sub">{{ cards|length }}
+      match{{ 'es' if cards|length != 1 }} for &ldquo;{{ q }}&rdquo; in your
+      archive{% if cards|length == 100 %} (first 100 shown){% endif %}.</p>
+    {% set show_briefed_date = true %}
+    {% for c in cards %}{% include "_paper_card.html" %}{% endfor %}
+    {% if not cards %}
+    <div class="empty">
+      <div class="big">&#128225;</div>
+      <h2>No matches</h2>
+      <p>Nothing in your archived briefings matches that search — try a
+        shorter word, or an author's last name.</p>
+    </div>
+    {% endif %}
+
+  {% elif sel_date %}
+    <p class="page-sub"><a href="/archive">&larr; All briefing days</a> ·
+      {{ sel_date }} · {{ cards|length }} pick{{ 's' if cards|length != 1 }}</p>
+    {% for c in cards %}{% include "_paper_card.html" %}{% endfor %}
+
+  {% elif months %}
+    {% for m in months %}
+    <details class="archive-month" {% if loop.first %}open{% endif %}>
+      <summary><span class="m-name">{{ m.label }}</span>
+        <span class="m-count">{{ m.days|length }} briefing{{ 's' if m.days|length != 1 }}</span></summary>
+      {% for d in m.days %}
+      <div class="archive-row">
+        <a href="/archive?date={{ d.date }}">{{ d.date }}</a>
+        <span class="a-meta">{{ d.weekday }} · {{ d.n }} paper{{ 's' if d.n != 1 }}</span>
+      </div>
+      {% endfor %}
+    </details>
+    {% endfor %}
+
+  {% else %}
+    <div class="empty">
+      <div class="big">&#128225;</div>
+      <h2>No briefings archived yet</h2>
+      <p>Every briefing you receive is kept here, searchable, from your first
+        one on. Once your radar delivers its first picks, they'll appear on
+        this page.</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
