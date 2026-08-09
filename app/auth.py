@@ -17,7 +17,7 @@ from app.config import cfg, smtp_configured
 from app import db
 
 TOKEN_TTL_MIN = 20
-SESSION_TTL_DAYS = 30
+SESSION_TTL_DAYS = 90
 RATE_PER_EMAIL = 5          # login requests per email per window
 RATE_PER_IP = 30            # per client IP per window
 RATE_WINDOW_MIN = 15

@@ -135,7 +135,7 @@ def onboarding(request: Request, step: int = 0, zerr: str = "", znotice: str = "
         notice = znotice
         if welcome == "1" and not notice:
             notice = ("You're signed in — you'll stay signed in on this device "
-                      "for 30 days.")
+                      "for 90 days.")
         return render(request, "onboarding.html",
                       _onboarding_ctx(con, user, step, error=zerr, notice=notice,
                                       zotero_preview=zpreview == "1"))

@@ -63,7 +63,7 @@ def auth_click(request: Request, token: str):
                                     "request a fresh one.", "email": ""},
                           status_code=400)
         user = db.ensure_user(con, email)
-        # welcome=1 surfaces the "signed in for 30 days on this device" note once
+        # welcome=1 surfaces the "signed in for 90 days on this device" note once
         dest = "/dashboard?welcome=1" if user["onboarded_at"] else "/onboarding?welcome=1"
         resp = RedirectResponse(dest, status_code=303)
         set_session_cookie(resp, user["id"])

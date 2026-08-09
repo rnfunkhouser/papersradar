@@ -9,7 +9,7 @@ from tests.conftest import login
 def test_privacy_page_renders_with_key_claims(client):
     r = client.get("/privacy")
     assert r.status_code == 200
-    for claim in ("hashed", "30", "encrypted at rest", "Groq", "Gemini",
+    for claim in ("hashed", "90", "encrypted at rest", "Groq", "Gemini",
                   "never sell", "Delete", "unsubscribe"):
         assert claim in r.text, claim
 
@@ -17,7 +17,7 @@ def test_privacy_page_renders_with_key_claims(client):
 def test_login_page_carries_privacy_and_session_notes(client):
     r = client.get("/login")
     assert r.status_code == 200
-    assert "signed in on this device for 30 days" in r.text
+    assert "signed in on this device for 90 days" in r.text
     assert "/privacy" in r.text
 
 
