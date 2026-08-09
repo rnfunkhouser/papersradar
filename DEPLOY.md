@@ -158,3 +158,31 @@ Caddy — the domain stays up while you debug.
   sentence-transformers into the venv, set `EMBEDDER=qwen3-embedding-0.6b`,
   run `python3 -m pipeline.run_daily profiles && ... embed` to backfill —
   vectors are embedder-tagged, nothing breaks mid-switch.
+
+## 7. 2026-08-09 feature batch — deploy notes
+
+New env knobs (all have safe defaults; see `.env.example`):
+`PRIORITY_JOURNAL_MIN_REL_PCTL` (60), `PRIORITY_JOURNAL_MAX_PER_USER` (10),
+`OPENALEX_MAX_PER_JOURNAL` (100), `COACH_DAILY_LIMIT` (10),
+`AUDIT_MIN_VOTES` (20).
+
+Migrations are automatic on first connect (web request or pipeline run):
+additive columns (`users.western_context`, `users.briefing_size`,
+`papers.source_id`), new tables (`sources`, `priority_journals`,
+`coach_usage`, `coach_drafts`, `profile_audits`, `data_migrations`), and a
+ONE-SHOT data scrub that decodes HTML entities in already-stored
+papers/seeds/feedback titles (tracked in `data_migrations`; idempotent; may
+take a few seconds on the first connect after deploy). Already-sent emails
+cannot be fixed retroactively.
+
+Expected first-run behavior:
+- `gather` logs two new summary keys (`new_priority_journal`,
+  `sources_enriched`); source-country enrichment backfills venue ids already
+  in `papers` on its first pass (one batched OpenAlex call per 50 venues).
+- Priority-journal slots and the Western-context option do nothing until a
+  user opts in; toggling the scope option re-judges that user's window on
+  the next run (profile-version bump — expected judge-load blip).
+- Coach endpoints refuse politely when no provider key is configured.
+
+Post-deploy check (spends exactly 3 LLM calls):
+`sudo -u papersradar /srv/papersradar/.venv/bin/python3 analysis/verify_coach_live.py`
