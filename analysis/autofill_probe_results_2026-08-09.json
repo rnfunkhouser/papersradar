@@ -1,0 +1,208 @@
+{
+  "personas": {
+    "dev_psych_numeracy": {
+      "seed_titles": [
+        "Home Numeracy Environments of Preschoolers: Examining Relations Among Mathematical Activities, Parent Mathematical Beliefs, and Early Mathematical Skills",
+        "Age‐related differences in the relation between the home numeracy environment and numeracy skills",
+        "Investing in Preschool Programs",
+        "Examining the Factor Structure of the Home Mathematics Environment to Delineate Its Role in Predicting Preschool Numeracy, Mathematical Language, and Spatial Skills",
+        "Prevalence of Autism Spectrum Disorder Among Children Aged 8 Years — Autism and Developmental Disabilities Monitoring Network, 11 Sites, United States, 2014",
+        "Approximate number system discrimination training for 7-8 year olds improves approximate, but not exact, arithmetics, and only in children with low pre-training arithmetic scores",
+        "Malleability of the approximate number system: effects of feedback and training",
+        "Functional Imaging of Numerical Processing in Adults and 4-y-Old Children",
+        "Interventions for preventing obesity in children",
+        "How and Why Parents Guide the Media Use of Young Children"
+      ],
+      "draft": {
+        "provider": "groq",
+        "n_seeds_in": 10,
+        "draft": {
+          "core_statement": "My work investigates how everyday interactions in the home shape the emergence of early mathematical competencies, focusing on the structural properties of the home numeracy environment and their predictive power for numeracy, spatial, and mathematical language skills. I combine psychometric modeling, experimental training of the Approximate Number System, and developmental neuroimaging to trace causal pathways from parental beliefs and practices to children’s symbolic and non‑symbolic number processing. By integrating longitudinal field data with controlled interventions, I aim to pinpoint which home‑based activities are truly malleable levers for boosting early math achievement. This perspective bridges educational psychology, cognitive neuroscience, and quantitative methods, distinguishing itself from broader early‑childhood program evaluations that treat the home context as a black box.",
+          "flavors": [
+            {
+              "name": "Home Numeracy Environment Factor Modeling",
+              "description": "Examines the latent dimensions of parental math activities, resources, and beliefs using confirmatory factor analysis and structural equation modeling. Draws on Bronfenbrenner’s ecological systems theory and Vygotskian concepts of scaffolding to interpret how specific factors (e.g., number talk, board games) relate to preschool numeracy, spatial, and mathematical language outcomes. Papers that decompose HME into distinct subscales and test their incremental prediction of child skill trajectories belong here."
+            },
+            {
+              "name": "Approximate Number System Training and Transfer",
+              "description": "Focuses on experimental interventions that sharpen ANS acuity (Weber fraction) and assess downstream effects on symbolic arithmetic, especially for low‑performing children. Grounded in the ANS‑symbolic mapping hypothesis and magnitude representation theory, it employs randomized controlled designs, pre/post behavioral testing, and feedback manipulation. Studies reporting differential gains in approximate versus exact arithmetic after short‑term ANS drills are central to this flavor."
+            },
+            {
+              "name": "Neurodevelopmental Correlates of Early Numerical Processing",
+              "description": "Integrates functional MRI or ERP data from preschoolers and adults to map the neural circuitry (e.g., intraparietal sulcus, prefrontal regions) supporting non‑symbolic and symbolic number tasks. Relies on the triple‑code model and developmental cognitive neuroscience frameworks to compare activation patterns across ages and relate them to home numeracy measures. Works that link brain activation indices to specific home‑based practices or ANS training outcomes fit this niche."
+            },
+            {
+              "name": "Parental Beliefs, Socioeconomic Context, and Math Skill Trajectories",
+              "description": "Investigates how parents’ mathematical self‑efficacy, growth mindset, and socioeconomic status interact to shape children’s early math growth, using multilevel regression and growth curve modeling. Theoretical anchors include expectancy‑value theory and cultural‑historical activity theory. Papers that parse variance at the family versus child level and test moderation by SES or belief variables are relevant."
+            },
+            {
+              "name": "Spatial and Mathematical Language Development in Home Settings",
+              "description": "Analyzes the co‑development of spatial reasoning and mathematical language (e.g., number words, relational terms) within everyday home interactions. Employs observational coding, natural language processing of parent‑child dialogues, and correlational or mediation analyses to link spatial talk and manipulatives to child performance on spatial and numeracy tasks. This flavor sits at the intersection of language acquisition, spatial cognition, and home learning environments."
+            }
+          ],
+          "negatives": [
+            "Epidemiological surveillance of autism prevalence",
+            "Systematic reviews of childhood obesity prevention programs",
+            "Research on parental mediation of media use and screen time",
+            "Broad cost‑benefit analyses of early childhood education policies without a focus on home numeracy mechanisms"
+          ]
+        }
+      }
+    },
+    "coral_reef_acoustics": {
+      "seed_titles": [
+        "Bacterial community dynamics are linked to patterns of coral heat tolerance",
+        "Spatial and temporal patterns of mass bleaching of corals in the Anthropocene",
+        "Caribbean Corals in Crisis: Record Thermal Stress, Bleaching, and Mortality in 2005",
+        "Genomic basis for coral resilience to climate change",
+        "Soundscapes and living communities in coral reefs: temporal and spatial variation",
+        "The sound of recovery: Coral reef restoration success is detectable in the soundscape",
+        "Coral reef species assemblages are associated with ambient soundscapes",
+        "Coral Reef Monitoring, Reef Assessment Technologies, and Ecosystem-Based Management",
+        "Acoustic enrichment can enhance fish community development on degraded coral reef habitat",
+        "Soundscape enrichment increases larval settlement rates for the brooding coral <i>Porites astreoides</i>"
+      ],
+      "draft": {
+        "provider": "groq",
+        "n_seeds_in": 10,
+        "draft": {
+          "core_statement": "My research interrogates how coral holobionts—host genomes, associated microbes, and the acoustic environment—jointly mediate resilience to rapid climate change. By coupling population genomics and metagenomics with high‑resolution passive acoustic monitoring, I identify mechanistic links between thermal tolerance, microbial community reassembly, and soundscape signatures of ecosystem function. I then translate these mechanistic insights into applied restoration, testing whether engineered soundscapes can accelerate fish and larval settlement on degraded reefs. The work sits at the nexus of eco‑genomics, soundscape ecology, and climate‑adaptation engineering, drawing on both molecular and acoustic data streams to forecast and bolster reef persistence.",
+          "flavors": [
+            {
+              "name": "Microbiome‑mediated thermal tolerance",
+              "description": "Focuses on how shifts in coral‑associated bacterial assemblages confer rapid acclimatization to heat stress. Employs reciprocal transplant experiments, 16S rRNA amplicon sequencing, and functional metagenomics to map microbial community turnover across thermal gradients. Grounded in the holobiont theory and the stress‑gradient hypothesis."
+            },
+            {
+              "name": "Genomic architecture of climate resilience",
+              "description": "Investigates host‑level genetic determinants of bleaching resistance using population genomics, RNA‑seq differential expression, and GWAS of stress‑response loci. Integrates epigenetic profiling (e.g., DNA methylation) to assess transgenerational acclimation. Relies on the adaptive genomic resilience framework and quantitative trait locus mapping."
+            },
+            {
+              "name": "Bioacoustic monitoring of reef health",
+              "description": "Applies passive acoustic monitoring (PAM) to quantify biophonic, geophonic, and anthrophonic components of reef soundscapes as proxies for biodiversity and functional integrity. Utilizes spectral entropy, acoustic complexity index, and machine‑learning classifiers to link sound metrics with fish and coral community surveys. Draws on soundscape ecology theory and ecosystem‑based management metrics."
+            },
+            {
+              "name": "Acoustic enrichment for ecological restoration",
+              "description": "Tests whether playback of healthy reef soundscapes can enhance settlement and retention of fish larvae and brooding corals on degraded substrates. Conducts field experiments with controlled sound treatments, settlement tile assays, and subsequent community composition analyses. Informed by ecological engineering principles and the habitat‑selection hypothesis."
+            },
+            {
+              "name": "Anthropocene bleaching dynamics",
+              "description": "Analyzes long‑term bleaching records and satellite sea‑surface temperature anomalies to model the decreasing return interval of severe bleaching events. Uses time‑series decomposition, survival analysis, and climate‑trajectory modeling to predict future bleaching regimes. Anchored in the Anthropocene climate impact framework and extreme‑event statistics."
+            }
+          ],
+          "negatives": [
+            "Macroalgal phase‑shift dynamics without explicit microbial or acoustic components",
+            "Socio‑economic assessments of reef tourism or fisheries that lack a biological mechanistic focus",
+            "Purely chemical ocean‑acidification experiments that do not integrate genomic or acoustic data",
+            "Coral skeletal morphology studies absent of climate‑resilience or soundscape context"
+          ]
+        }
+      }
+    }
+  },
+  "owner": {
+    "first40": {
+      "provider": "groq",
+      "n_seeds_in": 40,
+      "draft": {
+        "core_statement": "My research investigates how persuasive communication—especially narrative and inoculation strategies—shapes belief formation and behavior in digital and political contexts. I blend theories from social cognition (e.g., Elaboration Likelihood Model, Narrative Transportation) with computational methods (signal‑detection modeling, Bayesian meta‑analysis) to uncover the mechanisms that make some messages resistant to misinformation while others amplify it. A distinctive angle of my work is the focus on how identity processes (identity fusion, moral foundations) interact with deliberative dialogue and automated agents (bots) to produce collective outcomes such as climate action or democratic erosion. Although the topics touch on health, AI, and media studies, the unifying thread is the systematic design and evaluation of persuasive interventions across socio‑technical systems.",
+        "flavors": [
+          {
+            "name": "Narrative Inoculation for Climate Misinformation",
+            "description": "Studies that combine narrative persuasion (e.g., Transportation‑Imagery Model) with psychological inoculation (prebunking) to counter climate‑related falsehoods. Look for experiments using gamified or video‑based inoculation, hierarchical Bayesian signal‑detection analyses, and outcomes measured in climate belief change or conspiracy belief reduction. Papers that explicitly test breadth vs. depth of climate messages or norm‑enhanced prebunking belong here."
+          },
+          {
+            "name": "Computational Propaganda and Bot‑Mediated Persuasion",
+            "description": "Research that examines automated agents (social bots, AI‑generated content) as tools of political persuasion or information warfare. Inclusion criteria: use of bot detection algorithms, network analysis of influence operations, and assessment of message framing or moral appeal effects. Works that reference computational propaganda, information operations, or LLM‑driven persuasion experiments fit this flavor."
+          },
+          {
+            "name": "Deliberative Dialogue and Persuasive Argument Quality",
+            "description": "Investigations of how structured deliberation (deliberative democracy theory) interacts with argument quality to produce opinion change. Look for coding manuals for online deliberation, measurement of argument strength, and application of the Elaboration Likelihood Model to deliberative settings. Studies that map discussion networks, compare deliberative vs. non‑deliberative persuasion, or test the Persuasion‑Openness model are central."
+          },
+          {
+            "name": "Identity Fusion & Moral Foundations in Extremist Persuasion",
+            "description": "Work that links identity fusion theory and Moral Foundations Theory to the uptake of extreme or extremist narratives. Papers should manipulate personal vs. social identity cues, measure ingroup solidarity, and assess outcomes such as willingness to endorse violent actions or conspiracy beliefs. Use of experimental designs that test synergistic effects of fused identity and moral framing signals inclusion."
+          },
+          {
+            "name": "Digital Media Developmental Impacts via Persuasive Message Design",
+            "description": "Meta‑analytic and longitudinal studies that evaluate how digital media (social media, video games) affect child and adolescent health outcomes through the lens of persuasive communication frameworks. Inclusion requires systematic reviews of message design theories (e.g., Persuasive Systems Design, ELM), coding of media exposure, and health/developmental metrics (cognition, well‑being). The focus is on the persuasive mechanisms, not merely descriptive usage statistics."
+          }
+        ],
+        "negatives": [
+          "Pure clinical health interventions for children that do not address persuasive communication or media effects.",
+          "AI ethics or algorithmic fairness research that lacks a focus on persuasion, messaging, or political influence.",
+          "Brand‑centric marketing storytelling studies that are unrelated to public‑policy, climate, or political domains.",
+          "Technical network‑science papers on platform architecture without analysis of message content or persuasion outcomes.",
+          "Laboratory studies of memory or cognition that do not involve narrative, inoculation, or identity‑based persuasion."
+        ]
+      }
+    },
+    "random40_seed42": {
+      "provider": "gemini",
+      "n_seeds_in": 40,
+      "draft": {
+        "core_statement": "This researcher investigates how micro-narratives, interactional discourse, and conversational artificial intelligence influence human political persuasion, belief modification, and democratic deliberation. Taking an integrative sociolinguistic and psychological angle, their work bridges qualitative narrative frameworks—specifically 'small stories' research and positioning theory—with large-scale experimental and computational evaluations of AI-mediated communication. Rather than treating political discourse as mere broad messaging, they examine how specific discursive structures, conversational AI prompting, and prebunking interventions affect attitude polarization, democratic norm compliance, and perspective-taking. Work focusing on generic health-behavior chatbots, commercial brand storytelling, or pediatric digital media exposure only sounds related but lies outside this profile.",
+        "flavors": [
+          {
+            "name": "AI-Mediated Political Persuasion and Conversational Interventions",
+            "description": "Investigates how large language models, conversational chatbots, and AI agents alter human political attitudes, reduce conspiracy beliefs, and foster openness to counter-attitudinal viewpoints. Utilizes large-scale randomized controlled trials, prebunking frameworks, and conversational interventions such as AI-driven deep canvassing. Incorporates theories of persuasion such as the Elaboration Likelihood Model (ELM) alongside quantitative text and interaction logs (e.g., Reddit’s r/ChangeMyView)."
+          },
+          {
+            "name": "Small Stories Research and Interactional Positioning Theory",
+            "description": "Examines how individuals perform identity, power, and stance through short, everyday micro-narratives across social media platforms and qualitative interviews. Applies sociolinguistic analysis, practice-based approaches to Bamberg’s Level 3 positioning analysis, and im/politeness-in-interaction frameworks. Focuses on curated social media affordances (e.g., Instagram/Snapchat Stories) and marginalization or crisis negotiation contexts."
+          },
+          {
+            "name": "Human-AI Narrative Synthesis in Civic Deliberation",
+            "description": "Explores human-AI collaborative pipelines and conversational tools designed to synthesize constituent feedback into first-person narratives that enhance democratic discourse and public decision-making. Evaluates interventions aimed at reducing political perception gaps and stoking constructive dialogue using deliberative democracy metrics. Focuses on upscaling micro and meso-level deliberative exchanges to macro systemic frameworks."
+          },
+          {
+            "name": "Psychological Inoculation and Resistance to Computational Propaganda",
+            "description": "Studies the mechanisms of information manipulation—such as elite advertising, social media bots, and political incivility—and technical/psychological counter-measures. Employs hierarchical Bayesian meta-analyses, Signal Detection Theory (SDT), and inoculation theory to evaluate how prebunking interventions and symbolic thinking predict misinformation susceptibility and democratic disaffection."
+          }
+        ],
+        "negatives": [
+          "Pediatric, developmental, or physical health impacts of digital media exposure and screen time in children.",
+          "Corporate management, brand marketing, and strategic business leadership storytelling.",
+          "Clinical or health-behavior change chatbots designed strictly for medical adherence, fitness, or personal lifestyle modification.",
+          "Macro-institutional political science studies of governance and elections that lack micro-level interactional, discourse, or media intervention methodologies."
+        ]
+      }
+    }
+  },
+  "suggest": {
+    "provider": "groq",
+    "input": {
+      "statement": "I study how children learn math and how families and schools can help.",
+      "flavors": [
+        {
+          "name": "math learning",
+          "description": "Children learning mathematics."
+        }
+      ],
+      "negatives": [
+        "neuroscience",
+        "education policy"
+      ]
+    },
+    "out": {
+      "questions": [
+        "Do you want to include studies that use neuroimaging or other neuroscience methods if they focus on behavioral outcomes (e.g., the functional imaging paper), or should all neuroscience‑related work be excluded?",
+        "Should papers that examine related developmental conditions (e.g., autism spectrum disorder) be considered when they address math learning, or are all clinical/diagnostic studies excluded?",
+        "How far should the scope extend to family‑mediated factors beyond the home numeracy environment, such as media guidance or health‑related interventions that might indirectly affect math learning?",
+        "Do you want to require a specific methodological approach (e.g., longitudinal designs, randomized interventions, factor analysis) for inclusion, or is any empirical study on the listed topics acceptable?"
+      ],
+      "suggestions": [
+        "Add a sub‑topic for \"Home Numeracy Environment and Parental Mathematical Beliefs\" to capture the first four seed papers.",
+        "Include \"Approximate Number System (ANS) training and feedback effects\" as a distinct intersection, reflecting the two ANS training papers.",
+        "Specify that studies employing factor analysis, structural equation modeling, or other latent‑variable techniques are within scope, since the factor‑structure paper uses this method.",
+        "Clarify the exclusion of neuroscience by wording it as \"Neuroscience methods that focus primarily on brain mechanisms without direct behavioral measurement of math learning\" rather than a blanket ban.",
+        "Expand the exclusions to mention \"clinical diagnostic prevalence studies (e.g., autism prevalence) unless they directly assess mathematical outcomes\" to avoid ambiguity with the autism paper."
+      ],
+      "flags": [
+        "\"math learning: Children learning mathematics.\" – This phrase is tautological and does not delineate any specific angle for the judge to assess relevance.",
+        "\"Exclusions: neuroscience\" – The draft later lists a functional imaging study, creating a direct conflict that will confuse the selection process.",
+        "\"Exclusions: education policy\" – Without defining what counts as policy (e.g., funding studies, curriculum mandates), judges may arbitrarily include or reject borderline papers."
+      ]
+    }
+  },
+  "llm_calls": 5
+}
