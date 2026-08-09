@@ -87,3 +87,43 @@ reserved), local embedder swap, LLM prose summaries, feedback CSV export.
   "Full summary on your dashboard" deep link (/more/<id> → #paper-<id>);
   sessions now 90 days; bump_version now microsecond-precise.
 - Tests: 102 passing, fully offline.
+
+## 2026-08-09 (later) — live operations, branding, about, size default
+
+All deployed to papersradar.com and verified:
+- Ranking: within-fit-band embedding tiebreak (judgments.relevance persisted,
+  legacy backfill done) — validated twice against owner blind ratings
+  (P@5 1.00 both sessions vs 0.80 baseline).
+- Branding: "Echo" logo (dot + two broken arcs) in nav, theme-aware SVG
+  favicon + PNGs (regenerate: tools/gen_logo_assets.py, Pillow dev-only),
+  email header logo, decorative bottom-arc background (.page-arcs — landing
+  CTA floats over it; remove the div+CSS block to kill the treatment).
+- /about page (photo app/static/ryan.jpg, origin story, contact
+  admin@papersradar.com, Ko-fi support); Ko-fi links in footer + landing
+  free box (ko-fi.com/rfunkhouser).
+- Briefing size range now 3–10, global default 5 (owner's account uses the
+  default — set 8 in Settings if preferred).
+- Email: Brevo domain authenticated via API (UI verification was silently
+  incomplete — see memory notes); daily briefings delivering since 08-08.
+  Cloudflare Email Routing enabled for admin@papersradar.com →
+  rfunkhouser@uidaho.edu: PENDING the owner clicking the destination
+  verification link, then create the rule (POST /email/routing/rules — the
+  exact call is in the session notes).
+
+## NEXT — agreed plan, not yet executed
+1. Owner edits docs/site-copy.md (full site copy + structure worksheet;
+   `>> ` lines = structure notes) → apply all copy/structure edits → redeploy.
+2. Open-sourcing (owner-confirmed decisions): AGPL-3.0 license; NEW public
+   repo `research-radar` (owner runs `gh repo create` himself — permission
+   classifier blocks Claude); archive old `new_papers_radar` with a pointer
+   README; then set SOURCE_URL in /srv/papersradar/.env + restart web to
+   activate open-source tagline + source links.
+3. Oracle ARM (A1.Flex 2ocpu/12GB) still out of capacity in us-sanjose-1:
+   retry = Resource Manager stack "Apply"; on success → migrate via deploy.sh
+   + local Qwen3-0.6B embedder (EMBEDDER env flip + profiles/embed backfill;
+   vectors are embedder-tagged).
+4. Parked: tip-jar was DONE (Ko-fi); optional password login (only if 90-day
+   sessions don't cover it); WYSIWYG copy-block editor (declined for now);
+   GitHub Sponsors once repo public; owner's UIdaho profile v4 draft awaits
+   his read + VPN-connected validation run (see new_papers_briefing/
+   profile_review_2026-08-08/).
