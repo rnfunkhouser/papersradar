@@ -149,6 +149,52 @@ CREATE TABLE IF NOT EXISTS zotero_links (
     last_sync_at TEXT,
     ledger_json TEXT DEFAULT '{}'             -- {dois: [], keys: []} append-only sync ledger
 );
+-- Journal/venue registry (OpenAlex sources). country_code powers the
+-- Western-context scope option; rows are written by the priority-journal
+-- autocomplete and by the gather stage's source enrichment.
+CREATE TABLE IF NOT EXISTS sources (
+    id          TEXT PRIMARY KEY,               -- OpenAlex source id (S...)
+    display_name TEXT DEFAULT '',
+    country_code TEXT DEFAULT '',               -- ISO 3166-1 alpha-2, '' = unknown
+    type        TEXT DEFAULT '',
+    fetched_at  TEXT
+);
+-- Per-user priority journals: gathered unconditionally, and given guaranteed
+-- judge slots when relevance clears PRIORITY_JOURNAL_MIN_REL_PCTL.
+CREATE TABLE IF NOT EXISTS priority_journals (
+    user_id     INTEGER NOT NULL REFERENCES users(id),
+    source_id   TEXT NOT NULL,
+    display_name TEXT DEFAULT '',
+    country_code TEXT DEFAULT '',
+    added_at    TEXT NOT NULL,
+    UNIQUE(user_id, source_id)
+);
+-- AI profile coach: per-user daily rate limit counter (all coach modes share
+-- one budget), the latest unsaved autofill draft, and the audit history.
+CREATE TABLE IF NOT EXISTS coach_usage (
+    user_id     INTEGER NOT NULL REFERENCES users(id),
+    date        TEXT NOT NULL,
+    count       INTEGER DEFAULT 0,
+    UNIQUE(user_id, date)
+);
+CREATE TABLE IF NOT EXISTS coach_drafts (
+    user_id     INTEGER PRIMARY KEY REFERENCES users(id),
+    draft_json  TEXT NOT NULL,
+    created_at  TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS profile_audits (
+    id          INTEGER PRIMARY KEY,
+    user_id     INTEGER NOT NULL REFERENCES users(id),
+    created_at  TEXT NOT NULL,
+    n_votes     INTEGER DEFAULT 0,
+    proposals_json TEXT DEFAULT '[]',
+    provider    TEXT DEFAULT ''
+);
+-- One-shot data fix-ups that have run against this DB (see DATA_MIGRATIONS).
+CREATE TABLE IF NOT EXISTS data_migrations (
+    name        TEXT PRIMARY KEY,
+    applied_at  TEXT NOT NULL
+);
 -- RESERVED for per-user inbound email (Scholar alert forwarding) — nothing
 -- writes this yet; see DESIGN.md §7.
 CREATE TABLE IF NOT EXISTS email_ingest (
@@ -179,6 +225,55 @@ MIGRATIONS = [
     # the briefings stage backfills rows that can still enter a briefing.
     ("judgments", "relevance",
      "ALTER TABLE judgments ADD COLUMN relevance REAL"),
+    # Western-context scope option (2026-08, per-user, default OFF): hard
+    # venue-country filter + soft topical deprioritization in the judge prompt.
+    ("users", "western_context",
+     "ALTER TABLE users ADD COLUMN western_context INTEGER DEFAULT 0"),
+    # per-user briefing size 5-10 (2026-08): NULL = global BRIEFING_MAX_ITEMS,
+    # same override pattern as users.shortlist_size.
+    ("users", "briefing_size",
+     "ALTER TABLE users ADD COLUMN briefing_size INTEGER"),
+    # OpenAlex source id of the paper's venue (2026-08) — joins to sources for
+    # priority-journal marking and the Western-context country filter.
+    ("papers", "source_id",
+     "ALTER TABLE papers ADD COLUMN source_id TEXT DEFAULT ''"),
+]
+
+
+def _scrub_html_entities(con: sqlite3.Connection) -> None:
+    """One-time fix-up (2026-08): early ingests stored HTML entities from
+    OpenAlex/arXiv ('AI &amp;amp; Society'), which templates then escaped
+    AGAIN at render. Ingest now unescapes (openalex.clean_text); this scrubs
+    the rows stored before the fix. Idempotent — clean_text is a fixpoint.
+    Past sent emails cannot be fixed; dashboards and future emails render
+    clean after this runs."""
+    from app.openalex import clean_text
+    for r in con.execute("SELECT id, title, venue, abstract, authors_json "
+                         "FROM papers WHERE title LIKE '%&%' OR venue LIKE '%&%' "
+                         "OR abstract LIKE '%&%' OR authors_json LIKE '%&%'").fetchall():
+        try:
+            authors = json.loads(r["authors_json"] or "[]")
+        except ValueError:
+            authors = []
+        con.execute(
+            "UPDATE papers SET title=?, venue=?, abstract=?, authors_json=? WHERE id=?",
+            (clean_text(r["title"]), clean_text(r["venue"]),
+             clean_text(r["abstract"]),
+             json.dumps([clean_text(str(a)) for a in authors]), r["id"]))
+    for r in con.execute("SELECT id, title, abstract FROM seeds "
+                         "WHERE title LIKE '%&%' OR abstract LIKE '%&%'").fetchall():
+        con.execute("UPDATE seeds SET title=?, abstract=? WHERE id=?",
+                    (clean_text(r["title"]), clean_text(r["abstract"]), r["id"]))
+    for r in con.execute("SELECT user_id, paper_id, title FROM feedback "
+                         "WHERE title LIKE '%&%'").fetchall():
+        con.execute("UPDATE feedback SET title=? WHERE user_id=? AND paper_id=?",
+                    (clean_text(r["title"]), r["user_id"], r["paper_id"]))
+
+
+# One-shot data fix-ups, tracked in data_migrations so each runs exactly once
+# per database (they are also safe to re-run by hand).
+DATA_MIGRATIONS = [
+    ("scrub_html_entities_2026-08", _scrub_html_entities),
 ]
 
 
@@ -187,6 +282,12 @@ def _migrate(con: sqlite3.Connection) -> None:
         cols = {r["name"] for r in con.execute(f"PRAGMA table_info({table})")}
         if column not in cols:
             con.execute(ddl)
+    applied = {r["name"] for r in con.execute("SELECT name FROM data_migrations")}
+    for name, fn in DATA_MIGRATIONS:
+        if name not in applied:
+            fn(con)
+            con.execute("INSERT INTO data_migrations(name, applied_at) VALUES(?,?)",
+                        (name, now()))
     con.commit()
 
 
@@ -266,6 +367,10 @@ def delete_user_cascade(con, uid: int) -> None:
                 "(SELECT id FROM seeds WHERE user_id=?)", (uid,))
     con.execute("DELETE FROM seeds WHERE user_id=?", (uid,))
     con.execute("DELETE FROM zotero_links WHERE user_id=?", (uid,))
+    con.execute("DELETE FROM priority_journals WHERE user_id=?", (uid,))
+    con.execute("DELETE FROM coach_usage WHERE user_id=?", (uid,))
+    con.execute("DELETE FROM coach_drafts WHERE user_id=?", (uid,))
+    con.execute("DELETE FROM profile_audits WHERE user_id=?", (uid,))
     con.execute("DELETE FROM profiles WHERE user_id=?", (uid,))
     con.execute("DELETE FROM email_ingest WHERE user_id=?", (uid,))
     con.execute("DELETE FROM auth_tokens WHERE email=?", (email,))

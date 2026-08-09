@@ -134,28 +134,28 @@ def resolve_item(data: dict) -> dict | None:
     None when unresolvable. DOI'd items are looked up on OpenAlex to pull the
     abstract; no-DOI items are title-resolved against OpenAlex with the
     close-match guard in openalex.lookup()."""
-    title = (data.get("title") or "").strip()
+    title = openalex.clean_text((data.get("title") or "").strip())
+    z_abstract = openalex.clean_text(data.get("abstractNote") or "")
     doi, _ = item_doi(data)
     if doi:
         rec = openalex.lookup(doi)
         return {"doi": (rec or {}).get("doi") or doi,
                 "openalex_id": (rec or {}).get("openalex_id", ""),
                 "title": (rec or {}).get("title") or title or doi,
-                "abstract": (rec or {}).get("abstract", "")
-                            or (data.get("abstractNote") or "")}
+                "abstract": (rec or {}).get("abstract", "") or z_abstract}
     if len(title) < 8:
         return None
     rec = openalex.lookup(title)
     if not rec:
         # keep the item anyway if Zotero itself has an abstract — the embedding
         # only needs title+abstract text, not an OpenAlex identity
-        if data.get("abstractNote"):
+        if z_abstract:
             return {"doi": "", "openalex_id": "", "title": title,
-                    "abstract": data.get("abstractNote") or ""}
+                    "abstract": z_abstract}
         return None
     return {"doi": rec.get("doi", ""), "openalex_id": rec.get("openalex_id", ""),
             "title": rec.get("title") or title,
-            "abstract": rec.get("abstract", "") or (data.get("abstractNote") or "")}
+            "abstract": rec.get("abstract", "") or z_abstract}
 
 
 def preview(items: list[dict], ledger: dict) -> dict:

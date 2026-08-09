@@ -118,9 +118,10 @@ def harvest_arxiv(since: str) -> list[dict]:
         if date < since:
             continue
         out.append({
-            "source": "arxiv", "doi": "", "title": tag("title"),
+            "source": "arxiv", "doi": "", "title": openalex.clean_text(tag("title")),
             "venue": "arXiv (preprint)",
-            "authors": re.findall(r"<name>(.*?)</name>", entry),
+            "authors": [openalex.clean_text(n)
+                        for n in re.findall(r"<name>(.*?)</name>", entry)],
             "date": date, "created": date, "type": "preprint",
             "abstract": openalex.cap_abstract(tag("summary")),
             "concept_ids": [], "countries": [],
@@ -149,7 +150,7 @@ def harvest_osf(since: str) -> list[dict]:
                 doi = re.sub(r"_v\d+$", "", doi.replace("https://doi.org/", ""))
                 out.append({
                     "source": prov, "doi": doi,
-                    "title": (a.get("title") or "").strip(),
+                    "title": openalex.clean_text((a.get("title") or "").strip()),
                     "venue": venue, "authors": [],
                     "date": (a.get("date_published") or "")[:10],
                     "created": (a.get("date_published") or "")[:10],
@@ -179,14 +180,15 @@ def insert_new(con, records: list[dict]) -> int:
         seen_batch.add(k)
         cur = con.execute(
             "INSERT OR IGNORE INTO papers(key, doi, title, venue, authors_json, "
-            "pub_date, created_date, type, abstract, oa_url, source, "
+            "pub_date, created_date, type, abstract, oa_url, source, source_id, "
             "concept_ids_json, countries_json, first_seen) "
-            "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (k, rec.get("doi", ""), rec.get("title", ""), rec.get("venue", ""),
              json.dumps(rec.get("authors", [])[:20]), rec.get("date", ""),
              rec.get("created", ""), rec.get("type", ""),
              rec.get("abstract", ""), rec.get("oa_url", ""),
-             rec.get("source", ""), json.dumps(rec.get("concept_ids", [])),
+             rec.get("source", ""), rec.get("source_id", ""),
+             json.dumps(rec.get("concept_ids", [])),
              json.dumps(rec.get("countries", [])), appdb.today()))
         n += cur.rowcount
     con.commit()

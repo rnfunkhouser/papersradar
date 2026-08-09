@@ -4,6 +4,7 @@ Base URL is configurable so tests run against a local stub.
 """
 from __future__ import annotations
 
+import html
 import json
 import re
 import ssl
@@ -14,6 +15,20 @@ import urllib.request
 from app.config import cfg
 
 DOI_RE = re.compile(r"10\.\d{4,9}/[^\s\"'<>]+", re.I)
+
+
+def clean_text(text: str) -> str:
+    """Decode HTML entities that upstream sources leave in titles/abstracts/
+    venues (&amp;, &lt;, &#8217; — sometimes double-encoded, &amp;amp;). Called
+    at INGEST so the DB holds plain text; templates and the email renderer
+    then escape exactly once at render (Jinja autoescape / html.escape)."""
+    text = text or ""
+    for _ in range(3):                    # bounded loop handles double-encoding
+        unescaped = html.unescape(text)
+        if unescaped == text:
+            break
+        text = unescaped
+    return text
 
 
 def _ssl_ctx():
@@ -49,10 +64,11 @@ def parse_work(w: dict) -> dict:
     return {
         "openalex_id": (w.get("id") or "").rsplit("/", 1)[-1],
         "doi": (w.get("doi") or "").replace("https://doi.org/", ""),
-        "title": (w.get("title") or w.get("display_name") or "").strip(),
-        "venue": src.get("display_name") or "",
-        "authors": [a["author"]["display_name"] for a in w.get("authorships", [])
-                    if a.get("author")],
+        "title": clean_text((w.get("title") or w.get("display_name") or "").strip()),
+        "venue": clean_text(src.get("display_name") or ""),
+        "source_id": (src.get("id") or "").rsplit("/", 1)[-1],
+        "authors": [clean_text(a["author"]["display_name"])
+                    for a in w.get("authorships", []) if a.get("author")],
         "date": w.get("publication_date", "") or "",
         "created": w.get("created_date", "") or "",
         "type": w.get("type", "") or "",
@@ -74,8 +90,10 @@ ABSTRACT_CAP = 8000
 
 
 def cap_abstract(text: str) -> str:
-    """Never cut mid-sentence (ported verbatim from harvest.py)."""
-    text = (text or "").strip()
+    """Entity-decode, then cap without cutting mid-sentence (cap logic ported
+    verbatim from harvest.py). Every abstract ingest path flows through here
+    (OpenAlex inverted index, arXiv, OSF), so stored abstracts are clean."""
+    text = clean_text((text or "").strip())
     if len(text) <= ABSTRACT_CAP:
         return text
     cut = text[:ABSTRACT_CAP]
