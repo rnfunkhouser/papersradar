@@ -74,7 +74,7 @@ h1, h2, h3 { line-height: 1.25; letter-spacing: -0.015em; }
   position: relative; height: 0; overflow: visible; pointer-events: none; z-index: 0;
 }
 .page-arcs svg {
-  position: absolute; bottom: -330px; left: 50%; transform: translateX(-50%);
+  position: absolute; bottom: -150px; left: 50%; transform: translateX(-50%);
   width: 160vw; max-width: 2200px; color: var(--brand);
   -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,.9), transparent 85%);
   mask-image: linear-gradient(to top, rgba(0,0,0,.9), transparent 85%);
@@ -370,3 +370,9 @@ code { background: var(--brand-soft); color: var(--brand-soft-text);
   margin: 4px 0 14px 22px; box-shadow: var(--shadow); }
 .about-support { clear: both; border-top: 1px solid var(--line); padding-top: 18px; margin-top: 26px; }
 @media (max-width: 520px) { .about-photo { float: none; display: block; margin: 0 auto 18px; max-width: 60%; } }
+
+main { position: relative; z-index: 1; }
+
+/* landing CTA sits over the bottom arcs */
+.cta-band { margin-bottom: -8px; }
+section.wrap:last-of-type { padding-bottom: 26px; }
