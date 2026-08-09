@@ -35,7 +35,7 @@ _DEFAULTS = {
     "OSF_BASE": "https://api.osf.io",
     "JUDGE_SHORTLIST_PER_USER": "40",
     "BRIEFING_MIN_FIT": "6",
-    "BRIEFING_MAX_ITEMS": "8",
+    "BRIEFING_MAX_ITEMS": "5",
     "GATHER_WINDOW_DAYS": "4",
     "OPENALEX_MAX_PER_CONCEPT": "800",
     # Priority journals: papers from a user's chosen journals get guaranteed

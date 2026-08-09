@@ -176,12 +176,12 @@ def onboarding(request: Request, step: int = 0, zerr: str = "", znotice: str = "
 
 
 def _parse_briefing_size(raw: str):
-    """'' -> None (global default); else clamp to the allowed 5-10 range."""
+    """'' -> None (global default); else clamp to the allowed 3-10 range."""
     raw = (raw or "").strip()
     if not raw:
         return None
     try:
-        return max(5, min(10, int(raw)))
+        return max(3, min(10, int(raw)))
     except ValueError:
         return None
 

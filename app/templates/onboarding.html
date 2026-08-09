@@ -29,7 +29,7 @@
       <label>How many papers per briefing?</label>
       <select name="briefing_size">
         <option value="" {% if not user.briefing_size %}selected{% endif %}>Standard (up to {{ default_briefing_size }})</option>
-        {% for n in range(5, 11) %}
+        {% for n in range(3, 11) %}
           <option value="{{ n }}" {% if user.briefing_size == n %}selected{% endif %}>Up to {{ n }}</option>
         {% endfor %}
       </select>
