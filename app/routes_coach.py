@@ -51,39 +51,41 @@ def coach_autofill(request: Request):
     """Draft core statement + flavors + negatives from the user's seed papers.
     The draft is stored in coach_drafts and PREFILLS the structured editor —
     it is never saved as the profile without the user walking the editor
-    steps themselves."""
-    from app.routes_user import MIN_SEEDS, SEEDS_STEP, _onboarding_ctx
+    steps themselves. On success the user lands on the describe step of THEIR
+    path ('papers': the step right after seeds; 'manual': back at step 1)."""
+    from app.routes_user import MIN_SEEDS, _onboarding_ctx, step_num
     from pipeline import providers
     con = db.connect()
     try:
         user = get_user(request, con)
         if not user:
             return login_redirect()
+        seeds_step = step_num(user, "seeds")
         seeds = con.execute("SELECT title, abstract FROM seeds WHERE user_id=? "
                             "ORDER BY id", (user["id"],)).fetchall()
         if len(seeds) < MIN_SEEDS:
             return render(request, "onboarding.html",
-                          _onboarding_ctx(con, user, SEEDS_STEP,
+                          _onboarding_ctx(con, user, seeds_step,
                                           error=f"Add at least {MIN_SEEDS} seed "
                                                 "papers first — the draft is built "
                                                 "from them."),
                           status_code=400)
         if not _take_budget(con, user["id"]):
             return render(request, "onboarding.html",
-                          _onboarding_ctx(con, user, SEEDS_STEP, error=BUDGET_MSG),
+                          _onboarding_ctx(con, user, seeds_step, error=BUDGET_MSG),
                           status_code=429)
         try:
             text, _provider = _chat(coach.AUTOFILL_SYSTEM,
                                     coach.autofill_user_msg([dict(s) for s in seeds]))
         except providers.ProvidersUnavailable:
             return render(request, "onboarding.html",
-                          _onboarding_ctx(con, user, SEEDS_STEP,
+                          _onboarding_ctx(con, user, seeds_step,
                                           error=UNAVAILABLE_MSG),
                           status_code=503)
         draft = coach.parse_autofill(text)
         if not draft:
             return render(request, "onboarding.html",
-                          _onboarding_ctx(con, user, SEEDS_STEP,
+                          _onboarding_ctx(con, user, seeds_step,
                                           error="The draft came back malformed — "
                                                 "please try once more."),
                           status_code=502)
@@ -92,7 +94,8 @@ def coach_autofill(request: Request):
                     "draft_json=excluded.draft_json, created_at=excluded.created_at",
                     (user["id"], json.dumps(draft, ensure_ascii=False), db.now()))
         con.commit()
-        return RedirectResponse("/onboarding?step=2", status_code=303)
+        return RedirectResponse(f"/onboarding?step={step_num(user, 'describe')}",
+                                status_code=303)
     finally:
         con.close()
 

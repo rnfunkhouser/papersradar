@@ -13,20 +13,20 @@ from tests.test_shortlist import _mk_paper
 # fields/endpoints that edit it later. Guards against a new onboarding input
 # quietly shipping without a settings equivalent.
 ONBOARDING_FIELDS_TO_SETTINGS = {
-    # onboarding step 1 (about)
+    # the "About you" step (shared tail of both onboarding paths)
     "name":            ("/settings/account", 'name="name"'),
     "frequency":       ("/settings/account", 'name="frequency"'),
     "briefing_size":   ("/settings/account", 'name="briefing_size"'),
     "western_context": ("/settings/scope", 'name="western_context"'),
-    # steps 2-4 (structured interest editor)
+    # structured interest editor steps (describe / topics / negatives)
     "statement":       ("/settings/criteria", 'name="core_statement"'),
     "flavor_key":      ("/settings/criteria", 'name="flavor_key"'),
     "flavor_desc":     ("/settings/criteria", 'name="flavor_desc"'),
     "flavor_core":     ("/settings/criteria", 'name="flavor_core"'),
     "negative":        ("/settings/criteria", 'name="negative"'),
-    # step 5 (priority journals) — same endpoints from both surfaces
+    # priority-journals step — same endpoints from both surfaces
     "priority_journal": ("/journals/add", "journal-q"),
-    # step 6 (seeds + Zotero)
+    # seeds step (paste + Zotero; position depends on the chosen path)
     "seeds":           ("/settings/seeds/add", 'name="papers"'),
     "zotero":          ("/zotero/connect", "zotero"),
 }
@@ -56,24 +56,43 @@ def test_every_onboarding_field_is_editable_in_settings(client, test_db):
 def test_onboarding_page_collects_exactly_those_fields(client, test_db):
     """The inverse guard: onboarding's form fields are all in the parity map,
     so adding a new wizard input forces a settings equivalent (or a conscious
-    edit of this test)."""
-    login(client, "parity2@example.com")
-    known = set(ONBOARDING_FIELDS_TO_SETTINGS)
-    step_fields = {
-        1: {"name", "frequency", "briefing_size", "western_context"},
-        2: {"statement"},
-        3: {"flavor_key", "flavor_desc", "flavor_core"},
-        4: {"negative"},
-    }
+    edit of this test). The entry fork's `path` field is a one-time flow
+    choice (which order the same steps run in), not a persistent preference —
+    it deliberately has no settings equivalent."""
     import re
-    for step, expected in step_fields.items():
+
+    def fields_on(step):
         page = client.get(f"/onboarding?step={step}").text
         got = set(re.findall(r'<(?:input|select|textarea)[^>]*?name="([a-z_]+)"',
                              page))
-        got -= {"seed_id", "next", "papers", "zotero_url", "zotero_key",
-                "collection_key"}                       # aux/back-forms
-        assert got == expected, f"step {step}: {got} != {expected}"
+        # aux/back-forms + the Zotero widget's own fields (covered by the
+        # "zotero" parity-map entry; the widget is shared with settings)
+        return got - {"seed_id", "next", "papers", "zotero_url", "zotero_key",
+                      "collection_key", "library_type", "library_id", "api_key"}
+
+    login(client, "parity2@example.com")
+    # the entry fork collects only the path choice
+    assert fields_on(0) == {"path"}
+    known = set(ONBOARDING_FIELDS_TO_SETTINGS)
+    # manual path: describe, topics, negatives, seeds, about, journals, review
+    client.post("/onboarding/path", data={"path": "manual"})
+    step_fields = {
+        1: {"statement"},
+        2: {"flavor_key", "flavor_desc", "flavor_core"},
+        3: {"negative"},
+        4: set(),                                       # seeds: aux forms only
+        5: {"name", "frequency", "briefing_size", "western_context"},
+    }
+    for step, expected in step_fields.items():
+        got = fields_on(step)
+        assert got == expected, f"manual step {step}: {got} != {expected}"
         assert expected <= known
+    # papers path: the same steps, seeds first
+    client.post("/onboarding/path", data={"path": "papers"})
+    assert fields_on(1) == set()                        # seeds step
+    assert fields_on(2) == {"statement"}
+    assert fields_on(5) == {"name", "frequency", "briefing_size",
+                            "western_context"}
 
 
 def test_settings_account_saves_briefing_size(client, test_db):

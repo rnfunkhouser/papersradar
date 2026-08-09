@@ -6,17 +6,54 @@
   <div class="progress">
     {% for i in range(1, n_steps + 1) %}<span class="{{ 'done' if step >= i }}"></span>{% endfor %}
   </div>
+  {% if step == 0 %}
+  <div class="step-label">Before step 1 · Choose your starting point</div>
+  {% else %}
   <div class="step-label">Step {{ step }} of {{ n_steps }} ·
-    {{ ["About you", "Describe your research", "Topics & intersections",
-        "Not interested", "Priority journals", "Seed papers",
-        "Review & launch"][step - 1] }}</div>
+    {{ step_titles[step - 1] }}</div>
+  {% endif %}
 
   {% if notice %}<div class="notice">{{ notice }}</div>{% endif %}
   {% if error %}<div class="error">{{ error }}</div>{% endif %}
 
-  {% if step == 1 %}
+  {% if step == 0 %}
   <div class="panel">
-    <h3>Welcome! First, the basics.</h3>
+    <h3>Two ways to write your Selection Criteria</h3>
+    <div class="field-note">
+      Your radar runs on your <strong>Selection Criteria</strong> — a
+      plain-English description of your research that an AI judge reads against
+      every new paper, every morning. Choose how to write the first draft;
+      either way, you review and edit every field before anything is saved.
+    </div>
+    <div class="fork-option">
+      <form method="post" action="/onboarding/path">
+        <input type="hidden" name="path" value="papers">
+        <button class="btn" type="submit">Start from my papers</button>
+        <span class="hint" style="margin-left:8px">recommended</span>
+      </form>
+      <p class="hint">You add papers that fit your interests first — paste DOIs
+        or link a Zotero library — and we draft your description, topics and
+        exclusions from them. Then you walk through the same steps as the
+        written path, with every field pre-filled for you to edit.</p>
+    </div>
+    <div class="fork-option">
+      <form method="post" action="/onboarding/path">
+        <input type="hidden" name="path" value="manual">
+        <button class="btn btn-ghost" type="submit">Write it myself</button>
+      </form>
+      <p class="hint">You describe your research in your own words, step by
+        step, with a worked example at each step. Seed papers come after.</p>
+    </div>
+    <p class="hint" style="margin-top:14px">One thing to know before you pick:
+      a drafted profile is a starting point, not a finished setup. The radar is
+      only as sharp as these descriptions, so plan to edit and refine whatever
+      the draft gets almost-right. You can switch approaches anytime with the
+      Back button.</p>
+  </div>
+
+  {% elif step_slug == "about" %}
+  <div class="panel">
+    <h3>Nearly there — a few basics.</h3>
     <form method="post" action="/onboarding/about">
       <label>Your name</label>
       <input type="text" name="name" value="{{ user.name }}" placeholder="Dr. Ada Lovelace" required>
@@ -53,8 +90,11 @@
       <button class="btn" type="submit" style="margin-top:14px">Continue</button>
     </form>
   </div>
+  <div style="margin:18px 0">
+    <a class="btn btn-ghost" href="/onboarding?step={{ step - 1 }}">Back</a>
+  </div>
 
-  {% elif step == 2 %}
+  {% elif step_slug == "describe" %}
   {% if coach_draft %}
   <div class="notice ai-draft-banner"><strong>AI draft — edit to make it
     yours.</strong> These fields were drafted from your seed papers. Nothing is
@@ -76,17 +116,23 @@
       {% include "_coach_suggest.html" %}
       <button class="btn" type="submit" style="margin-top:14px">Continue</button>
     </form>
-    {% if not user.interest_statement and not coach_draft %}
-    <p class="hint" style="margin-top:12px">Not sure where to start? If you
-      <a href="/onboarding?step=6">add your seed papers first</a>, we can
-      draft this whole section from them and you just edit.</p>
+    {% if not coach_draft and seeds|length >= min_seeds %}
+    <form method="post" action="/coach/autofill" style="margin-top:12px">
+      <button class="btn btn-ghost" type="submit">Draft this from my seed papers</button>
+      <span class="hint" style="margin-left:8px">Pre-fills any empty fields from
+        your {{ seeds|length }} seeds — your own words are never overwritten.</span>
+    </form>
+    {% elif not user.interest_statement and not coach_draft %}
+    <p class="hint" style="margin-top:12px">Prefer to start from a draft built
+      from your papers? <a href="/onboarding?step=0">Go back</a> and choose
+      "Start from my papers".</p>
     {% endif %}
   </div>
   <div style="margin:18px 0">
-    <a class="btn btn-ghost" href="/onboarding?step=1">Back</a>
+    <a class="btn btn-ghost" href="/onboarding?step={{ step - 1 }}">Back</a>
   </div>
 
-  {% elif step == 3 %}
+  {% elif step_slug == "topics" %}
   {% if coach_draft %}
   <div class="notice ai-draft-banner"><strong>AI draft — edit to make it
     yours.</strong> Topics below were drafted from your seed papers — rename,
@@ -111,10 +157,10 @@
     </form>
   </div>
   <div style="margin:18px 0">
-    <a class="btn btn-ghost" href="/onboarding?step=2">Back</a>
+    <a class="btn btn-ghost" href="/onboarding?step={{ step - 1 }}">Back</a>
   </div>
 
-  {% elif step == 4 %}
+  {% elif step_slug == "negatives" %}
   {% if coach_draft %}
   <div class="notice ai-draft-banner"><strong>AI draft — edit to make it
     yours.</strong> These candidate exclusions were drafted from your seed
@@ -136,10 +182,10 @@
     </form>
   </div>
   <div style="margin:18px 0">
-    <a class="btn btn-ghost" href="/onboarding?step=3">Back</a>
+    <a class="btn btn-ghost" href="/onboarding?step={{ step - 1 }}">Back</a>
   </div>
 
-  {% elif step == 5 %}
+  {% elif step_slug == "journals" %}
   <div class="panel">
     <h3>Journals you never want to miss</h3>
     <div class="field-note">
@@ -153,18 +199,21 @@
     {% include "_journals_editor.html" %}
   </div>
   <div style="display:flex;justify-content:space-between;margin:18px 0">
-    <a class="btn btn-ghost" href="/onboarding?step=4">Back</a>
-    <a class="btn" href="/onboarding?step=6">Continue{% if not priority_journals %} (skip){% endif %}</a>
+    <a class="btn btn-ghost" href="/onboarding?step={{ step - 1 }}">Back</a>
+    <a class="btn" href="/onboarding?step={{ step + 1 }}">Continue{% if not priority_journals %} (skip){% endif %}</a>
   </div>
 
-  {% elif step == 6 %}
+  {% elif step_slug == "seeds" %}
   <div class="panel">
-    <h3>Add seed papers</h3>
+    <h3>Add {% if path == 'papers' %}your {% endif %}seed papers</h3>
     <div class="field-note">
       <strong>What seeds do:</strong> seeds steer the <em>Gathering</em> stage — every
       morning we search the research areas your seed papers live in and shortlist new
-      work that sits semantically close to them. Aim for {{ min_seeds }}–100 papers you
-      wish you'd been alerted to when they came out. More seeds = a better-aimed net.
+      work that sits semantically close to them.{% if path == 'papers' %} They're also
+      the raw material for your drafted Selection Criteria (next step).{% endif %}
+      Aim for {{ min_seeds }}–100 papers you
+      wish you'd been alerted to when they came out. More seeds = a better-aimed
+      net{% if path == 'papers' %} and a sharper draft{% endif %}.
     </div>
     <form method="post" action="/onboarding/seeds">
       <label>Paste DOIs or titles — one per line</label>
@@ -183,7 +232,7 @@ The title of a paper also works"></textarea>
           <span class="v">{{ s.doi or 'no DOI' }}</span>
           <form method="post" action="/onboarding/seeds/remove" style="display:inline">
             <input type="hidden" name="seed_id" value="{{ s.id }}">
-            <input type="hidden" name="next" value="/onboarding?step=6">
+            <input type="hidden" name="next" value="/onboarding?step={{ step }}">
             <button type="submit" title="Remove">&#10005;</button>
           </form>
         </div>
@@ -191,7 +240,35 @@ The title of a paper also works"></textarea>
     {% endif %}
   </div>
 
-  {% if seeds|length >= min_seeds %}
+  {% if seeds|length >= min_seeds and path == 'papers' %}
+  <div class="panel">
+    <h3>Next: we draft your criteria from these papers</h3>
+    {% if coach_draft %}
+    <p class="hint">A draft from your seeds is ready — continue to review and
+      edit it, or re-draft if you've changed your seeds since.</p>
+    <div style="display:flex;gap:10px;align-items:center">
+      <a class="btn" href="/onboarding?step={{ step + 1 }}">Continue to your draft</a>
+      <form method="post" action="/coach/autofill" style="display:inline">
+        <button class="btn btn-ghost" type="submit">Re-draft from current seeds</button>
+      </form>
+    </div>
+    {% else %}
+    <p class="hint">One AI pass reads your {{ seeds|length }} seeds and drafts
+      your research description, topics and exclusions. You'll edit each step
+      before anything is saved — the draft is a starting point, and the radar
+      is only as sharp as your final wording.</p>
+    <form method="post" action="/coach/autofill">
+      <button class="btn" type="submit">Draft my criteria &amp; continue</button>
+    </form>
+    <p class="hint" style="margin-top:10px">Or
+      <a href="/onboarding?step={{ step + 1 }}">continue without a draft</a>
+      and write the steps yourself.</p>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% if seeds|length >= min_seeds and path != 'papers' and not coach_draft
+        and not user.interest_statement %}
   <div class="panel">
     <h3>Want a head start on your criteria?</h3>
     <p class="hint">We can draft your research description, topics and
@@ -206,16 +283,16 @@ The title of a paper also works"></textarea>
   {% include "zotero_widget.html" %}
 
   <div style="display:flex;justify-content:space-between;margin:18px 0">
-    <a class="btn btn-ghost" href="/onboarding?step=5">Back</a>
-    {% if seeds|length >= min_seeds %}
-      <a class="btn" href="/onboarding?step=7">Continue</a>
-    {% else %}
+    <a class="btn btn-ghost" href="/onboarding?step={{ step - 1 }}">Back</a>
+    {% if seeds|length < min_seeds %}
       <span class="hint" style="align-self:center">Add at least {{ min_seeds }} seeds to continue
         ({{ seeds|length }} so far)</span>
+    {% elif path != 'papers' %}
+      <a class="btn" href="/onboarding?step={{ step + 1 }}">Continue</a>
     {% endif %}
   </div>
 
-  {% elif step == 7 %}
+  {% elif step_slug == "review" %}
   <div class="panel">
     <h3>How your radar will work</h3>
     <p style="margin:10px 0">Two stages, every morning:</p>
@@ -241,7 +318,7 @@ The title of a paper also works"></textarea>
       criteria any time in Settings — every scoring rule is plain English you can read.</p>
   </div>
   <div style="display:flex;justify-content:space-between;margin:18px 0">
-    <a class="btn btn-ghost" href="/onboarding?step=6">Back</a>
+    <a class="btn btn-ghost" href="/onboarding?step={{ step - 1 }}">Back</a>
     <form method="post" action="/onboarding/finish">
       <button class="btn btn-lg" type="submit">Launch my radar</button>
     </form>

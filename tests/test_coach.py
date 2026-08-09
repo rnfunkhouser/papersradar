@@ -42,8 +42,9 @@ def _stub_chat(reply):
     return fake_chat
 
 
-def _onboard_with_seeds(client, email):
+def _onboard_with_seeds(client, email, path="papers"):
     login(client, email)
+    client.post("/onboarding/path", data={"path": path})
     client.post("/onboarding/about", data={"name": "Dr C", "frequency": "daily"})
     client.post("/onboarding/seeds",
                 data={"papers": "10.1000/alpha\n10.1000/beta\n10.1000/gamma"})
@@ -79,11 +80,12 @@ def test_autofill_prefills_editor_without_saving(client, test_db, monkeypatch):
     monkeypatch.setattr(providers, "chat", _stub_chat(AUTOFILL_REPLY))
     user = _onboard_with_seeds(client, "auto@example.com")
 
-    # the offer appears on the seeds step
-    r = client.get("/onboarding?step=6")
-    assert "Draft my profile from my seed papers" in r.text
+    # papers path: the draft offer is the seeds step's continue action (step 1)
+    r = client.get("/onboarding?step=1")
+    assert "Draft my criteria" in r.text
 
     r = client.post("/coach/autofill")
+    # describe is step 2 on the papers path
     assert r.status_code == 303 and r.headers["location"] == "/onboarding?step=2"
     # draft stored, NOT saved onto the user or profile
     user = appdb.get_user_by_email(test_db, "auto@example.com")
@@ -112,6 +114,73 @@ def test_autofill_requires_seeds(client, test_db, monkeypatch):
     login(client, "noseeds@example.com")
     r = client.post("/coach/autofill")
     assert r.status_code == 400 and "seed" in r.text.lower()
+
+
+def test_papers_path_end_to_end(client, test_db, monkeypatch):
+    """The full auto path: fork -> seeds -> autofill -> prefilled editors ->
+    edited saves -> finish -> judge profile composed from the edited fields."""
+    from pipeline import providers
+    monkeypatch.setattr(providers, "chat", _stub_chat(AUTOFILL_REPLY))
+    login(client, "e2e@example.com")
+    client.post("/onboarding/path", data={"path": "papers"})
+
+    # step 1: seeds first; the gate hint shows until 3 seeds exist
+    r = client.get("/onboarding?step=1")
+    assert "Add at least 3 seeds" in r.text
+    client.post("/onboarding/seeds",
+                data={"papers": "10.1000/alpha\n10.1000/beta\n10.1000/gamma"})
+    r = client.get("/onboarding?step=1")
+    assert "Draft my criteria" in r.text
+
+    # draft, then walk the same editor steps with the prefills
+    r = client.post("/coach/autofill")
+    assert r.headers["location"] == "/onboarding?step=2"
+    r = client.get("/onboarding?step=2")
+    assert "ai-draft-banner" in r.text
+    assert "conversational AI persuades" in r.text
+    r = client.post("/onboarding/interests",
+                    data={"statement": "I study how conversational AI persuades "
+                                       "people online (edited)."})
+    assert r.headers["location"] == "/onboarding?step=3"
+    r = client.post("/onboarding/flavors",
+                    data={"flavor_key": ["AI persuasion"],
+                          "flavor_desc": ["LLMs shifting attitudes (edited)."],
+                          "flavor_core": ["1"]})
+    assert r.headers["location"] == "/onboarding?step=4"
+    r = client.post("/onboarding/negatives",
+                    data={"negative": ["Chatbot UX without persuasion outcomes"]})
+    assert r.headers["location"] == "/onboarding?step=5"
+    r = client.post("/onboarding/about", data={"name": "Dr E2E",
+                                              "frequency": "daily"})
+    assert r.headers["location"] == "/onboarding?step=6"
+    r = client.post("/onboarding/finish")
+    assert r.status_code == 303 and r.headers["location"] == "/dashboard"
+
+    user = appdb.get_user_by_email(test_db, "e2e@example.com")
+    prof = appdb.get_profile(test_db, user["id"])
+    assert "(edited)" in prof["core_statement"]
+    assert prof["flavors"] == [{"key": "ai_persuasion", "core": True,
+                                "description": "LLMs shifting attitudes (edited)."}]
+    assert prof["negatives"] == ["Chatbot UX without persuasion outcomes"]
+
+
+def test_manual_path_can_still_draft_from_editor(client, test_db, monkeypatch):
+    """Picking manual, then adding seeds, then returning to the describe step
+    still offers 'draft from my papers' — and the draft lands back on the
+    manual path's describe step (step 1)."""
+    from pipeline import providers
+    monkeypatch.setattr(providers, "chat", _stub_chat(AUTOFILL_REPLY))
+    user = _onboard_with_seeds(client, "late@example.com", path="manual")
+    r = client.get("/onboarding?step=1")            # manual: describe
+    assert "Draft this from my seed papers" in r.text
+    r = client.post("/coach/autofill")
+    assert r.status_code == 303 and r.headers["location"] == "/onboarding?step=1"
+    r = client.get("/onboarding?step=1")
+    assert "ai-draft-banner" in r.text
+    assert "conversational AI persuades" in r.text
+    # draft prefills only; nothing saved onto the user
+    user = appdb.get_user_by_email(test_db, "late@example.com")
+    assert not user["interest_statement"]
 
 
 def test_autofill_survives_provider_outage(client, monkeypatch):

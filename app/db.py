@@ -237,6 +237,11 @@ MIGRATIONS = [
     # priority-journal marking and the Western-context country filter.
     ("papers", "source_id",
      "ALTER TABLE papers ADD COLUMN source_id TEXT DEFAULT ''"),
+    # Onboarding entry fork (2026-08): 'papers' (seeds first, coach-drafted
+    # criteria) or 'manual' (write criteria first). '' = fork not answered;
+    # users who progressed before the fork existed continue as 'manual'.
+    ("users", "onboarding_path",
+     "ALTER TABLE users ADD COLUMN onboarding_path TEXT DEFAULT ''"),
 ]
 
 

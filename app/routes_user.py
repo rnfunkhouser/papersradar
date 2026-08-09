@@ -94,10 +94,47 @@ def _spawn_profile_build(uid: int):
 
 # --- onboarding --------------------------------------------------------------
 
-# about, describe, topics, negatives, journals, seeds, review
+# The wizard opens with an entry fork (step 0): "Start from my papers" adds
+# seed papers FIRST and coach-drafts the interest editors from them; "Write it
+# myself" keeps the interests-first order. Both are the SAME seven named steps
+# — only the position of the seeds step differs — and they converge on the
+# shared tail (about -> journals -> review).
+SEQUENCES = {
+    "papers": ["seeds", "describe", "topics", "negatives",
+               "about", "journals", "review"],
+    "manual": ["describe", "topics", "negatives", "seeds",
+               "about", "journals", "review"],
+}
+STEP_TITLES = {
+    "seeds": "Seed papers", "describe": "Describe your research",
+    "topics": "Topics & intersections", "negatives": "Not interested",
+    "about": "About you", "journals": "Priority journals",
+    "review": "Review & launch",
+}
 N_STEPS = 7
-JOURNALS_STEP = 5
-SEEDS_STEP = 6
+
+
+def user_path(user) -> str:
+    """'papers' | 'manual' | '' (fork not answered yet). Users who progressed
+    before the fork existed continue under the manual (original) order."""
+    try:
+        p = user["onboarding_path"] or ""
+    except (IndexError, KeyError):
+        p = ""
+    if p in SEQUENCES:
+        return p
+    if user["name"] or user["interest_statement"] or _user_flavors(user):
+        return "manual"
+    return ""
+
+
+def step_num(user, slug: str) -> int:
+    """1-based position of a named step in this user's sequence."""
+    return SEQUENCES[user_path(user) or "manual"].index(slug) + 1
+
+
+def _next_url(user, slug: str) -> str:
+    return f"/onboarding?step={step_num(user, slug) + 1}"
 
 
 def _coach_draft(con, uid: int) -> dict | None:
@@ -118,7 +155,12 @@ def _onboarding_ctx(con, user, step: int, error: str = "", notice: str = "",
     from app.routes_zotero import link_ctx
     seeds = con.execute("SELECT * FROM seeds WHERE user_id=? ORDER BY id",
                         (user["id"],)).fetchall()
+    path = user_path(user)
+    seq = SEQUENCES[path or "manual"]
+    step_slug = seq[step - 1] if 1 <= step <= N_STEPS else ""
     ctx = {"step": step, "n_steps": N_STEPS, "seeds": seeds, "min_seeds": MIN_SEEDS,
+           "path": path, "step_slug": step_slug,
+           "step_titles": [STEP_TITLES[s] for s in seq],
            "default_briefing_size": cfg_int("BRIEFING_MAX_ITEMS"),
            "flavors": _user_flavors(user), "negatives": _user_negatives(user),
            "priority_journals": user_priority_journals(con, user["id"]),
@@ -126,7 +168,7 @@ def _onboarding_ctx(con, user, step: int, error: str = "", notice: str = "",
            "draft_statement": "",
            "error": error, "notice": notice,
            "znext": f"/onboarding?step={step}",
-           "jnext": f"/onboarding?step={JOURNALS_STEP}"}
+           "jnext": f"/onboarding?step={seq.index('journals') + 1}"}
     # AI-drafted profile (coach autofill): PREFILL only — the draft becomes the
     # user's saved text exclusively when they submit each editor step.
     if ctx["coach_draft"]:
@@ -139,22 +181,27 @@ def _onboarding_ctx(con, user, step: int, error: str = "", notice: str = "",
         if not ctx["negatives"]:
             ctx["negatives"] = [str(n) for n in d.get("negatives") or []]
     ctx.update(link_ctx(con, user["id"],
-                        want_preview=zotero_preview and step == SEEDS_STEP))
+                        want_preview=zotero_preview and step_slug == "seeds"))
     return ctx
 
 
 def _default_step(user, n_seeds: int) -> int:
-    if not user["name"]:
-        return 1
-    if not user["interest_statement"]:
-        return 2
-    if not _user_flavors(user):
-        return 3
-    return SEEDS_STEP if n_seeds < MIN_SEEDS else N_STEPS
+    """First incomplete step in this user's sequence; 0 = the entry fork."""
+    path = user_path(user)
+    if not path:
+        return 0
+    missing = {"describe": not user["interest_statement"],
+               "topics": not _user_flavors(user),
+               "seeds": n_seeds < MIN_SEEDS,
+               "about": not user["name"]}
+    for i, slug in enumerate(SEQUENCES[path], 1):
+        if missing.get(slug):
+            return i
+    return N_STEPS
 
 
 @router.get("/onboarding")
-def onboarding(request: Request, step: int = 0, zerr: str = "", znotice: str = "",
+def onboarding(request: Request, step: int = -1, zerr: str = "", znotice: str = "",
                zpreview: str = "", welcome: str = ""):
     con = db.connect()
     try:
@@ -163,7 +210,9 @@ def onboarding(request: Request, step: int = 0, zerr: str = "", znotice: str = "
             return login_redirect()
         n = con.execute("SELECT COUNT(*) c FROM seeds WHERE user_id=?",
                         (user["id"],)).fetchone()["c"]
-        step = step if 1 <= step <= N_STEPS else _default_step(user, n)
+        step = step if 0 <= step <= N_STEPS else _default_step(user, n)
+        if step and not user_path(user):
+            step = 0                        # numbered steps need a chosen path
         notice = znotice
         if welcome == "1" and not notice:
             notice = ("You're signed in — you'll stay signed in on this device "
@@ -171,6 +220,26 @@ def onboarding(request: Request, step: int = 0, zerr: str = "", znotice: str = "
         return render(request, "onboarding.html",
                       _onboarding_ctx(con, user, step, error=zerr, notice=notice,
                                       zotero_preview=zpreview == "1"))
+    finally:
+        con.close()
+
+
+@router.post("/onboarding/path")
+def onboarding_path(request: Request, path: str = Form("")):
+    """The entry fork: 'papers' (seeds first, drafted criteria) or 'manual'.
+    Changeable — going Back to the fork and picking again just re-orders the
+    remaining steps; nothing already entered is lost."""
+    con = db.connect()
+    try:
+        user = get_user(request, con)
+        if not user:
+            return login_redirect()
+        if path not in SEQUENCES:
+            path = "manual"
+        con.execute("UPDATE users SET onboarding_path=? WHERE id=?",
+                    (path, user["id"]))
+        con.commit()
+        return RedirectResponse("/onboarding?step=1", status_code=303)
     finally:
         con.close()
 
@@ -215,7 +284,8 @@ def onboarding_about(request: Request, name: str = Form(""),
         name = name.strip()[:120]
         if not name:
             return render(request, "onboarding.html",
-                          _onboarding_ctx(con, user, 1, error="Please tell us your name."),
+                          _onboarding_ctx(con, user, step_num(user, "about"),
+                                          error="Please tell us your name."),
                           status_code=400)
         if frequency not in ("daily", "weekly", "none"):
             frequency = "daily"
@@ -224,7 +294,7 @@ def onboarding_about(request: Request, name: str = Form(""),
                      user["id"]))
         con.commit()
         _set_geo_scope(con, user, western_context == "1")
-        return RedirectResponse("/onboarding?step=2", status_code=303)
+        return RedirectResponse(_next_url(user, "about"), status_code=303)
     finally:
         con.close()
 
@@ -239,14 +309,14 @@ def onboarding_interests(request: Request, statement: str = Form("")):
         statement = statement.strip()[:4000]
         if len(statement) < MIN_STATEMENT_CHARS:
             return render(request, "onboarding.html",
-                          _onboarding_ctx(con, user, 2,
+                          _onboarding_ctx(con, user, step_num(user, "describe"),
                                           error="A few sentences helps the judge a lot — "
                                                 "please write at least a short paragraph."),
                           status_code=400)
         con.execute("UPDATE users SET interest_statement=? WHERE id=?",
                     (statement, user["id"]))
         con.commit()
-        return RedirectResponse("/onboarding?step=3", status_code=303)
+        return RedirectResponse(_next_url(user, "describe"), status_code=303)
     finally:
         con.close()
 
@@ -269,14 +339,14 @@ def onboarding_flavors(request: Request,
             con.commit()
             user = db.get_user(con, user["id"])
             return render(request, "onboarding.html",
-                          _onboarding_ctx(con, user, 3,
+                          _onboarding_ctx(con, user, step_num(user, "topics"),
                                           error="Add at least one topic with both a "
                                                 "short name and a description."),
                           status_code=400)
         con.execute("UPDATE users SET interest_flavors_json=? WHERE id=?",
                     (json.dumps(complete), user["id"]))
         con.commit()
-        return RedirectResponse("/onboarding?step=4", status_code=303)
+        return RedirectResponse(_next_url(user, "topics"), status_code=303)
     finally:
         con.close()
 
@@ -292,7 +362,7 @@ def onboarding_negatives(request: Request, negative: list[str] = Form([])):
         con.execute("UPDATE users SET interest_negatives_json=? WHERE id=?",
                     (json.dumps(negs), user["id"]))
         con.commit()
-        return RedirectResponse(f"/onboarding?step={JOURNALS_STEP}", status_code=303)
+        return RedirectResponse(_next_url(user, "negatives"), status_code=303)
     finally:
         con.close()
 
@@ -336,15 +406,15 @@ def onboarding_seeds(request: Request, papers: str = Form("")):
             error = ("Couldn't find: " + "; ".join(m[:80] for m in misses[:5])
                      + ". Try the DOI instead of the title.")
         return render(request, "onboarding.html",
-                      _onboarding_ctx(con, user, SEEDS_STEP, error=error,
-                                      notice=notice))
+                      _onboarding_ctx(con, user, step_num(user, "seeds"),
+                                      error=error, notice=notice))
     finally:
         con.close()
 
 
 @router.post("/onboarding/seeds/remove")
 def onboarding_seed_remove(request: Request, seed_id: int = Form(...),
-                           next: str = Form(f"/onboarding?step={SEEDS_STEP}")):
+                           next: str = Form("/onboarding")):
     con = db.connect()
     try:
         user = get_user(request, con)
@@ -356,7 +426,7 @@ def onboarding_seed_remove(request: Request, seed_id: int = Form(...),
         con.execute("DELETE FROM seeds WHERE id=? AND user_id=?",
                     (seed_id, user["id"]))
         con.commit()
-        dest = next if next.startswith("/") else f"/onboarding?step={SEEDS_STEP}"
+        dest = next if next.startswith("/") else "/onboarding"
         return RedirectResponse(dest, status_code=303)
     finally:
         con.close()
@@ -385,7 +455,51 @@ def onboarding_finish(request: Request):
         con.close()
 
 
-# --- dashboard ---------------------------------------------------------------
+# --- dashboard & archive -----------------------------------------------------
+
+def _briefing_cards(con, uid: int, date: str = "", q: str = "",
+                    limit: int = 200) -> list[dict]:
+    """Card dicts for this user's briefed papers (dashboard day view, archive
+    day view, archive search). `q` is a plain LIKE search over title, venue,
+    authors and abstract — always scoped to the user's own briefing_items."""
+    sql = ("SELECT p.*, b.date AS b_date, b.rank, b.fit AS b_fit, "
+           "j.flavors_json, j.why, "
+           "MAX(j.judged_at) AS _newest_judgment, "          # deterministic row pick
+           "COALESCE(f.vote, '') AS vote, "
+           "COALESCE(pj.display_name, '') AS pj_name "
+           "FROM briefing_items b "
+           "JOIN papers p ON p.id = b.paper_id "
+           "LEFT JOIN judgments j ON j.paper_id = b.paper_id AND j.user_id = b.user_id "
+           "LEFT JOIN feedback f ON f.paper_id = b.paper_id AND f.user_id = b.user_id "
+           "LEFT JOIN priority_journals pj ON pj.user_id = b.user_id "
+           "     AND pj.source_id = p.source_id AND p.source_id != '' "
+           "WHERE b.user_id=?")
+    args: list = [uid]
+    if date:
+        sql += " AND b.date=?"
+        args.append(date)
+    if q:
+        like = f"%{q}%"
+        sql += (" AND (p.title LIKE ? OR p.venue LIKE ? "
+                "OR p.authors_json LIKE ? OR p.abstract LIKE ?)")
+        args += [like] * 4
+    sql += " GROUP BY p.id ORDER BY b.date DESC, b.rank LIMIT ?"
+    args.append(limit)
+    cards = []
+    for r in con.execute(sql, args).fetchall():
+        cards.append({
+            "id": r["id"], "title": r["title"], "venue": r["venue"],
+            "date": r["pub_date"], "doi": r["doi"],
+            "authors": ", ".join(json.loads(r["authors_json"] or "[]")[:8]),
+            "fit": r["b_fit"], "briefing_date": r["b_date"],
+            "flavors": [f.replace("_", " ")
+                        for f in json.loads(r["flavors_json"] or "[]")],
+            "why": r["why"] or "", "abstract": r["abstract"] or "",
+            "vote": r["vote"],
+            "priority_journal": r["pj_name"] or "",
+        })
+    return cards
+
 
 @router.get("/dashboard")
 def dashboard(request: Request, date: str = "", welcome: str = ""):
@@ -400,34 +514,7 @@ def dashboard(request: Request, date: str = "", welcome: str = ""):
             "SELECT DISTINCT date FROM briefing_items WHERE user_id=? "
             "ORDER BY date DESC LIMIT 60", (user["id"],)).fetchall()]
         sel = date if date in dates else (dates[0] if dates else "")
-        items = []
-        if sel:
-            items = con.execute(
-                "SELECT p.*, b.rank, b.fit AS b_fit, j.flavors_json, j.why, "
-                "MAX(j.judged_at) AS _newest_judgment, "     # deterministic row pick
-                "COALESCE(f.vote, '') AS vote, "
-                "COALESCE(pj.display_name, '') AS pj_name "
-                "FROM briefing_items b "
-                "JOIN papers p ON p.id = b.paper_id "
-                "LEFT JOIN judgments j ON j.paper_id = b.paper_id AND j.user_id = b.user_id "
-                "LEFT JOIN feedback f ON f.paper_id = b.paper_id AND f.user_id = b.user_id "
-                "LEFT JOIN priority_journals pj ON pj.user_id = b.user_id "
-                "     AND pj.source_id = p.source_id AND p.source_id != '' "
-                "WHERE b.user_id=? AND b.date=? "
-                "GROUP BY p.id ORDER BY b.rank", (user["id"], sel)).fetchall()
-        cards = []
-        for r in items:
-            cards.append({
-                "id": r["id"], "title": r["title"], "venue": r["venue"],
-                "date": r["pub_date"], "doi": r["doi"],
-                "authors": ", ".join(json.loads(r["authors_json"] or "[]")[:8]),
-                "fit": r["b_fit"],
-                "flavors": [f.replace("_", " ")
-                            for f in json.loads(r["flavors_json"] or "[]")],
-                "why": r["why"] or "", "abstract": r["abstract"] or "",
-                "vote": r["vote"],
-                "priority_journal": r["pj_name"] or "",
-            })
+        cards = _briefing_cards(con, user["id"], date=sel) if sel else []
         n_seeds = con.execute("SELECT COUNT(*) c FROM seeds WHERE user_id=?",
                               (user["id"],)).fetchone()["c"]
         prof = db.get_profile(con, user["id"])
@@ -436,6 +523,55 @@ def dashboard(request: Request, date: str = "", welcome: str = ""):
             "n_seeds": n_seeds,
             "profile_ready": bool(prof and prof.get("retrieval_concepts")),
             "welcome": welcome == "1",
+        })
+    finally:
+        con.close()
+
+
+@router.get("/archive")
+def archive(request: Request, date: str = "", q: str = ""):
+    """Every past briefing day for this user (date + pick count, grouped by
+    month), a full card view per day, and a plain text search over the user's
+    own archived items. Votes work on archived cards exactly as on the
+    dashboard."""
+    import datetime as dt
+    con = db.connect()
+    try:
+        user = get_user(request, con)
+        if not user:
+            return login_redirect()
+        if not user["onboarded_at"]:
+            return RedirectResponse("/onboarding", status_code=303)
+        q = q.strip()[:120]
+        day_rows = con.execute(
+            "SELECT date, COUNT(*) n FROM briefing_items WHERE user_id=? "
+            "GROUP BY date ORDER BY date DESC", (user["id"],)).fetchall()
+        months: list[dict] = []
+        for r in day_rows:
+            month = r["date"][:7]
+            if not months or months[-1]["key"] != month:
+                try:
+                    label = dt.date.fromisoformat(month + "-01").strftime("%B %Y")
+                except ValueError:
+                    label = month
+                months.append({"key": month, "label": label, "days": []})
+            try:
+                weekday = dt.date.fromisoformat(r["date"]).strftime("%A")
+            except ValueError:
+                weekday = ""
+            months[-1]["days"].append({"date": r["date"], "weekday": weekday,
+                                       "n": r["n"]})
+        sel = date if any(d["date"] == date for m in months
+                          for d in m["days"]) else ""
+        cards = []
+        if q:
+            cards = _briefing_cards(con, user["id"], q=q, limit=100)
+        elif sel:
+            cards = _briefing_cards(con, user["id"], date=sel)
+        return render(request, "archive.html", {
+            "months": months, "n_days": len(day_rows),
+            "n_items": sum(r["n"] for r in day_rows),
+            "sel_date": sel, "q": q, "cards": cards,
         })
     finally:
         con.close()
