@@ -362,3 +362,11 @@ code { background: var(--brand-soft); color: var(--brand-soft-text);
 .audit-proposal .ap-suggested { margin-top: 6px; }
 .audit-proposal .ap-why { font-style: italic; opacity: 0.85; margin-top: 6px; }
 .audit-proposal .ap-papers { margin: 6px 0 0 18px; opacity: 0.85; }
+
+/* about page */
+.page-narrow { max-width: 640px; margin: 0 auto; padding: 40px 20px 60px; }
+.page-narrow h1 { margin-bottom: 22px; }
+.about-photo { float: right; width: 200px; max-width: 42%; border-radius: var(--radius);
+  margin: 4px 0 14px 22px; box-shadow: var(--shadow); }
+.about-support { clear: both; border-top: 1px solid var(--line); padding-top: 18px; margin-top: 26px; }
+@media (max-width: 520px) { .about-photo { float: none; display: block; margin: 0 auto 18px; max-width: 60%; } }

@@ -89,6 +89,16 @@ def about_scores(request: Request):
         con.close()
 
 
+@router.get("/about")
+def about(request: Request):
+    con = db.connect()
+    try:
+        get_user(request, con)
+        return render(request, "about.html")
+    finally:
+        con.close()
+
+
 @router.get("/privacy")
 def privacy(request: Request):
     con = db.connect()
