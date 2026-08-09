@@ -116,3 +116,20 @@ def test_email_truncated_abstract_links_full_summary(client, test_db):
     assert f"/more/{lp}" in html_out
     assert "Full summary on your dashboard" in html_out
     assert f"/more/{sp}" not in html_out                   # untruncated: no link
+
+
+def test_about_page_is_technical_first_with_methods_note(client):
+    """/about leads with the pipeline mechanics, points to the full methods
+    doc (inert placeholder until SOURCE_URL is configured), and keeps the
+    personal section as a compact card at the bottom."""
+    r = client.get("/about")
+    assert r.status_code == 200
+    body = r.text
+    for stage in ("Gathering", "Shortlist by meaning", "The AI judge",
+                  "Your briefing"):
+        assert stage in body
+    assert "docs/how-it-works.md" in body
+    assert "coming soon" in body            # tests run without SOURCE_URL
+    assert "Behind the tool" in body and "admin@papersradar.com" in body
+    # the technical section comes before the personal card
+    assert body.index("pipe-flow") < body.index("about-me")
