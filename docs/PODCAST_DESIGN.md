@@ -100,7 +100,39 @@ deploy-by-hand steps in `PODCAST_RUNBOOK.md`.*
 - **No-papers day:** no episode published (feed silent), status footer says why.
 - **Retry:** single retry ~60 min after failure, then skip + email footer report.
 
-## Build order
+## Phase 2 (approved 2026-08-31, not yet built): multi-user anchor via BYO key
+
+Goal: offer the anchor podcast to any papersradar user at zero marginal cost.
+The one hard constraint is Gemini TTS's free tier (10 requests/day PER KEY,
+measured); the fix is each user bringing their own free AI Studio key — no
+card required, ~2 minutes — so capacity scales linearly and everyone stays
+inside their own legitimate free tier. Scope:
+
+1. **Schema** (additive migrations): `users.gemini_key_enc` (encrypted at
+   rest exactly like `zotero_links.api_key_enc`, never sent to the browser),
+   optional `users.podcast_voice` (default Charon). `podcast_enabled` +
+   `podcast_token` already exist and are already multi-user.
+2. **Onboarding**: one OPTIONAL step ("Daily audio briefing — beta"): short
+   pitch, link + walkthrough for aistudio.google.com/apikey, paste field,
+   voice picker, skippable in one click. Same card in Settings (add / replace
+   / remove key, toggle off, show feed URL + subscribe-by-URL instructions).
+   Key validation via the free models-list GET (never spends a TTS request).
+3. **Pipeline**: `tts.synthesize(..., key=)` selects the user's decrypted key
+   (server key remains only for the owner); pacing state per key; the
+   "free-tier quota hit" email-footer case becomes "your Gemini key hit its
+   daily cap — episode skipped today."
+4. **Already done** (phase 1 built multi-user): per-user feeds/tokens/
+   episodes/emails, fulltext stage scoping, admin episode table.
+5. **Boundaries**: the nlm engine stays owner-only (gate on `is_admin`);
+   /privacy gains a paragraph on the stored encrypted key; a
+   `PODCAST_MAX_USERS` knob as a wall-clock safety valve (~1–2 min of paced
+   TTS per user; revisit parallelizing across keys past ~20 users).
+6. **Tests**: key encrypt/decrypt round-trip, per-user key selection,
+   keyless users skipped cleanly, onboarding/settings parity (house pattern).
+
+Estimated: ~a day. Next session's task.
+
+## Build order (phase 1)
 
 1. `pipeline/fetch_fulltext.py` port (post-judge, briefed papers only) + `fulltext_path` on briefing items.
 2. Script-first engine end-to-end (writer prompt → Gemini TTS free tier → MP3 + chapters) — shippable without any Google-account setup.

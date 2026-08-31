@@ -174,3 +174,13 @@ docs/PODCAST_RUNBOOK.md. Built (130 tests passing, 16 new, fully offline):
   pypdf, mutagen; system ffmpeg.
 Next (owner, on the VM): runbook §1–4 for anchor engine day one; §NLM for the
 NotebookLM engine + trial week; verify GEMINI key project has no billing.
+
+## NEXT (queued 2026-08-31, owner-approved): multi-user anchor podcast, BYO Gemini key
+Offer the anchor podcast to all users at $0: optional onboarding/settings step
+where each user generates their own free AI Studio key (10 TTS req/day per
+key = one episode + headroom each). Scope in docs/PODCAST_DESIGN.md "Phase 2":
+users.gemini_key_enc (Zotero-key encryption pattern), optional onboarding step
++ settings card with key walkthrough/voice picker, per-user key + pacing in
+tts.py, quota-cap footer message, nlm engine stays owner-only, privacy-page
+note, PODCAST_MAX_USERS valve, tests. ~1 day. Feeds/episodes/emails are
+already multi-user from phase 1.
