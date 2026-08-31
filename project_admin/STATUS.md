@@ -184,3 +184,19 @@ users.gemini_key_enc (Zotero-key encryption pattern), optional onboarding step
 tts.py, quota-cap footer message, nlm engine stays owner-only, privacy-page
 note, PODCAST_MAX_USERS valve, tests. ~1 day. Feeds/episodes/emails are
 already multi-user from phase 1.
+
+## 2026-08-31 (night) — deployed live; anchor ready, nlm blocked by Google-side changes
+Deployed to the VM and live-tested end-to-end. Working: feed (subscribed on
+owner's phone; trailer episode placed because Apple rejects empty feeds),
+timers (3:00/4:30am PT), fulltext (3/8 papers OA), TTS verified. Live testing
+caught + fixed: (1) TTS free tier is 10 req/day/model -> batched episodes
+(2-4 req) + pacing + 429 retry; (2) worker response envelope unwrap;
+(3) DATA_DIR=/data on the worker container — Google session now persisted in
+the volume (survives recreation, verified) and file-path uploads allowed.
+BLOCKED (external): NotebookLM has rebranded to "Gemini Notebook" with a
+redesigned add-sources UI (screenshot verified) AND showed an active
+incident banner; notebooklm-mcp's source-detection selectors target the old
+UI and no upstream fix exists yet (issues checked 2026-08-31). nlm engine
+left enabled — fails gracefully into the email footer, retries daily; watch
+upstream for a Gemini Notebook selector update. Anchor is the working engine;
+first real episode expected 2026-09-01 4:00am PT.
