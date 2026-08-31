@@ -93,6 +93,58 @@ def test_nlm_steering_prompt_lists_papers(test_db, podcast_env):
     assert "PhD-level" in p and "abstract-only" in p.lower()
 
 
+# --- TTS batching + retry -----------------------------------------------------
+
+def test_chunk_segments_batches_whole_segments():
+    from pipeline import tts
+    segs = [{"title": f"s{i}", "text": "x" * 900} for i in range(6)]
+    chunks = tts.chunk_segments(segs, max_chars=2000)
+    assert [len(c) for c in chunks] == [2, 2, 2]
+    assert sum(len(c) for c in chunks) == 6
+    # an oversized single segment still gets its own chunk
+    assert len(tts.chunk_segments([{"title": "big", "text": "x" * 9000}],
+                                  max_chars=2000)) == 1
+
+
+def test_synthesize_script_call_count_and_chapters(monkeypatch):
+    from pipeline import tts
+    calls = []
+    monkeypatch.setattr(tts, "synthesize", lambda text, voice=None:
+                        calls.append(text) or b"\x00" * (tts.BYTES_PER_SEC * 10))
+    segs = [{"title": "Introduction", "text": "a" * 100},
+            {"title": "P1", "text": "b" * 3000},
+            {"title": "P2", "text": "c" * 3000},
+            {"title": "Close", "text": "d" * 100}]
+    pcms, chapters = tts.synthesize_script(segs)
+    assert len(calls) == 2                     # 2 chunks, not 4 requests
+    assert [c["title"] for c in chapters] == ["Introduction", "P1", "P2", "Close"]
+    starts = [c["start_sec"] for c in chapters]
+    assert starts[0] == 0 and starts == sorted(starts)
+    assert starts[2] == 10                     # exact at the chunk boundary
+
+
+def test_synthesize_retries_429(monkeypatch):
+    from pipeline import tts
+    monkeypatch.setattr(tts, "PACE_SEC", 0)
+    monkeypatch.setattr("time.sleep", lambda s: None)
+    attempts = []
+
+    def flaky(text, voice):
+        attempts.append(1)
+        if len(attempts) == 1:
+            raise tts.TTSError("free-tier quota hit", code=429, retry_delay=1)
+        return b"\x00\x00"
+    monkeypatch.setattr(tts, "_request", flaky)
+    assert tts.synthesize("hi") == b"\x00\x00"
+    assert len(attempts) == 2
+    # a persistent 429 surfaces after the retry budget
+    attempts.clear()
+    monkeypatch.setattr(tts, "_request", lambda t, v: (_ for _ in ()).throw(
+        tts.TTSError("free-tier quota hit", code=429)))
+    with pytest.raises(tts.TTSError):
+        tts.synthesize("hi")
+
+
 # --- stage --------------------------------------------------------------------
 
 def test_stage_builds_episode_and_defers_email(test_db, podcast_env, monkeypatch):
@@ -115,7 +167,8 @@ def test_stage_builds_episode_and_defers_email(test_db, podcast_env, monkeypatch
     assert "Podcast" in sent[0][2] and "episode published" in sent[0][2]
     ep = test_db.execute("SELECT * FROM podcast_episodes").fetchone()
     assert ep["status"] == "ok" and ep["mime"] == "audio/wav"
-    assert ep["duration_sec"] == 4          # intro + 2 papers + close, 1s each
+    # short segments batch into ONE TTS call (free tier: 10 requests/day)
+    assert ep["duration_sec"] == 1
     chapters = json.loads(ep["chapters_json"])
     assert [c["title"] for c in chapters] == \
         ["Introduction", "Paper 0 title", "Paper 1 title", "Close"]

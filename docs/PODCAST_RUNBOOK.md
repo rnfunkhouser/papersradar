@@ -74,7 +74,16 @@ sudo -u papersradar ENV_FILE=/srv/papersradar/.env \
 
 Refresh the feed in your podcast app; the episode should appear.
 
-## §TTS — when Gemini TTS 404s the model name
+## §TTS — quotas and model names
+
+**The free-tier TTS budget is TEN requests per day per model**
+(`GenerateRequestsPerDayPerProjectPerModel-FreeTier`, measured 2026-08-31;
+resets midnight Pacific). The pipeline batches a whole episode into ~1–4
+requests (script chunks of whole segments, `pipeline/tts.py`), which leaves
+headroom for the 4:30 retry — but every manual `pipeline.tts --say` test
+also spends one, so don't smoke-test on a morning you want the episode.
+
+### When Gemini TTS 404s the model name
 
 Preview TTS model names churn. List what your key can see and update
 `GEMINI_TTS_MODEL` in `.env`:

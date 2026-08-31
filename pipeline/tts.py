@@ -17,6 +17,7 @@ from __future__ import annotations
 import argparse
 import base64
 import json
+import re
 import shutil
 import ssl
 import struct
@@ -41,7 +42,10 @@ STYLE = ("Read the following in a measured, professional news-broadcast "
 
 
 class TTSError(Exception):
-    pass
+    def __init__(self, msg: str, code: int = 0, retry_delay: float = 0.0):
+        super().__init__(msg)
+        self.code = code
+        self.retry_delay = retry_delay
 
 
 def _ssl_ctx():
@@ -52,8 +56,42 @@ def _ssl_ctx():
         return ssl.create_default_context()
 
 
+# The free-tier TTS preview quota is TEN requests per day per model
+# (GenerateRequestsPerDayPerProjectPerModel-FreeTier, measured 2026-08-31),
+# with ~3 requests/min. So an episode must fit in a handful of calls: the
+# script is batched into chunks of whole segments (chunk_segments), calls are
+# paced, and 429s retry with the server's retryDelay.
+CHUNK_MAX_CHARS = 3500
+PACE_SEC = 21              # ~3 requests/min with margin
+RETRIES_429 = 2
+
+_last_call = 0.0
+
+
+def _pace():
+    import time
+    global _last_call
+    wait = PACE_SEC - (time.monotonic() - _last_call)
+    if wait > 0:
+        time.sleep(wait)
+    _last_call = time.monotonic()
+
+
 def synthesize(text: str, voice: str | None = None) -> bytes:
-    """One TTS call -> raw PCM (s16le mono 24 kHz). Raises TTSError."""
+    """One paced TTS call (429s retried) -> raw PCM (s16le mono 24 kHz)."""
+    import time
+    for attempt in range(RETRIES_429 + 1):
+        _pace()
+        try:
+            return _request(text, voice)
+        except TTSError as e:
+            if e.code == 429 and attempt < RETRIES_429:
+                time.sleep(max(e.retry_delay, 30.0))
+                continue
+            raise
+
+
+def _request(text: str, voice: str | None) -> bytes:
     key = cfg("GEMINI_API_KEY").strip()
     if not key:
         raise TTSError("GEMINI_API_KEY not configured")
@@ -78,17 +116,23 @@ def synthesize(text: str, voice: str | None = None) -> bytes:
     except urllib.error.HTTPError as e:
         detail = ""
         try:
-            detail = e.read().decode("utf-8", "replace")[:300]
+            detail = e.read().decode("utf-8", "replace")
         except Exception:
             pass
         if e.code == 404:
             raise TTSError(
                 f"model {model!r} not found — TTS preview names churn; see "
                 f"docs/PODCAST_RUNBOOK.md §TTS to list live models "
-                f"({detail})") from e
+                f"({detail[:200]})", code=404) from e
         if e.code == 429:
-            raise TTSError(f"free-tier quota exhausted (HTTP 429): {detail}") from e
-        raise TTSError(f"HTTP {e.code}: {detail}") from e
+            m = re.search(r'retryDelay[^0-9]*([0-9.]+)s', detail)
+            quota = re.search(r'"quotaId":\s*"([^"]+)"', detail)
+            raise TTSError(
+                "free-tier quota hit (HTTP 429"
+                + (f", {quota.group(1)}" if quota else "") + ")",
+                code=429,
+                retry_delay=float(m.group(1)) if m else 0.0) from e
+        raise TTSError(f"HTTP {e.code}: {detail[:300]}", code=e.code) from e
     except Exception as e:
         raise TTSError(f"{type(e).__name__}: {e}") from e
     try:
@@ -98,18 +142,62 @@ def synthesize(text: str, voice: str | None = None) -> bytes:
         raise TTSError(f"unexpected response shape: {str(data)[:300]}") from e
 
 
+def chunk_segments(segments: list[dict],
+                   max_chars: int = CHUNK_MAX_CHARS) -> list[list[dict]]:
+    """Group whole script segments into as few TTS requests as fit the char
+    budget (the 10-requests/day free tier is the scarce resource). A single
+    over-budget segment still gets its own chunk."""
+    chunks: list[list[dict]] = []
+    cur: list[dict] = []
+    n = 0
+    for seg in segments:
+        length = len(seg["text"])
+        if cur and n + length > max_chars:
+            chunks.append(cur)
+            cur, n = [], 0
+        cur.append(seg)
+        n += length
+    if cur:
+        chunks.append(cur)
+    return chunks
+
+
+def synthesize_script(segments: list[dict]) -> tuple[list[bytes], list[dict]]:
+    """Whole script -> (chunk_pcms, chapters). Chapters are exact at chunk
+    boundaries and estimated by character proportion inside a chunk."""
+    chunks = chunk_segments(segments)
+    pcms: list[bytes] = []
+    chapters: list[dict] = []
+    offset = 0
+    for chunk in chunks:
+        pcm = synthesize("\n\n".join(s["text"] for s in chunk))
+        total = sum(len(s["text"]) for s in chunk) or 1
+        pos = 0
+        for s in chunk:
+            start = offset + int(len(pcm) * pos / total)
+            chapters.append({"start_sec": start // BYTES_PER_SEC,
+                             "title": s["title"]})
+            pos += len(s["text"]) + 2
+        offset += len(pcm)
+        pcms.append(pcm)
+    return pcms, chapters
+
+
 # --- episode assembly ---------------------------------------------------------
 
-def assemble(segment_pcms: list[bytes], titles: list[str],
-             out_stem: Path) -> dict:
-    """Concatenate segment PCM -> one episode file. Returns
-    {"path", "mime", "bytes", "duration_sec", "chapters"} where chapters is
-    [{"start_sec", "title"}] aligned to segment starts."""
-    chapters = []
-    offset = 0
-    for pcm, title in zip(segment_pcms, titles):
-        chapters.append({"start_sec": offset // BYTES_PER_SEC, "title": title})
-        offset += len(pcm)
+def assemble(segment_pcms: list[bytes], titles: list[str], out_stem: Path,
+             chapters: list[dict] | None = None) -> dict:
+    """Concatenate PCM -> one episode file. Returns {"path", "mime", "bytes",
+    "duration_sec", "chapters"}. Chapters default to one per PCM entry
+    (aligned to its start); pass precomputed `chapters` when PCM chunks and
+    chapter marks don't correspond 1:1 (synthesize_script)."""
+    if chapters is None:
+        chapters = []
+        offset = 0
+        for pcm, title in zip(segment_pcms, titles):
+            chapters.append({"start_sec": offset // BYTES_PER_SEC,
+                             "title": title})
+            offset += len(pcm)
     pcm_all = b"".join(segment_pcms)
     duration = round(len(pcm_all) / BYTES_PER_SEC)
     out_stem.parent.mkdir(parents=True, exist_ok=True)

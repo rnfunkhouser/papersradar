@@ -107,11 +107,12 @@ def _save_failure(con, user, date: str, engine: str, err: str) -> None:
 
 def run_anchor(con, user, rows, date: str, title: str) -> dict:
     script = podcast_script.build_script(con, rows, date)
-    pcms, titles = [], []
-    for seg in script["segments"]:
-        pcms.append(tts.synthesize(seg["text"]))
-        titles.append(seg["title"])
-    return tts.assemble(pcms, titles, _episode_dir(user["id"]) / f"{date}_anchor")
+    # batched: the whole script uses a handful of TTS requests (free tier
+    # allows only 10/day for the TTS model — see pipeline/tts.py)
+    pcms, chapters = tts.synthesize_script(script["segments"])
+    return tts.assemble(pcms, [c["title"] for c in chapters],
+                        _episode_dir(user["id"]) / f"{date}_anchor",
+                        chapters=chapters)
 
 
 def run_nlm(con, user, rows, date: str, title: str) -> dict:
