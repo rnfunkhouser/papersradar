@@ -11,8 +11,13 @@ Type=simple
 # PDF sources can be added by file path (NLM_FILE_MAP in .env rewrites the
 # prefix). noVNC (:6080) stays loopback-only — reach it via an SSH tunnel.
 ExecStartPre=-/usr/bin/docker rm -f notebooklm-mcp
+# DATA_DIR=/data: the code reads DATA_DIR (the image's NOTEBOOKLM_DATA_DIR is
+# stale) — this keeps the Google session in the named volume so it survives
+# container recreation, AND makes /data the allowed root for file-path source
+# uploads, which the papersradar bind mount lives under.
 ExecStart=/usr/bin/docker run --name notebooklm-mcp \
     --memory=450m --memory-swap=700m \
+    -e DATA_DIR=/data \
     -p 127.0.0.1:3000:3000 -p 127.0.0.1:6080:6080 \
     -v notebooklm-data:/data \
     -v /srv/papersradar/data:/data/papersradar:ro \
