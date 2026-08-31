@@ -1,17 +1,30 @@
 #!/usr/bin/env python3
 """Client for a self-hosted notebooklm-mcp worker (the NotebookLM two-host
-podcast engine). The worker (github.com/roomi-fields/notebooklm-mcp) exposes
-NotebookLM — a dedicated Google account, logged in once via noVNC — as a local
-REST API; this module drives one episode: fresh notebook, upload sources
-(full-text PDFs + a notes doc for abstract-only papers), request the Audio
-Overview with the steering prompt, poll, download WAV, prune old notebooks.
+podcast engine). The worker (github.com/roomi-fields/notebooklm-mcp, run via
+its Docker image — a dedicated Google account logged in once through noVNC)
+exposes NotebookLM as a local REST API; this module drives one episode:
+fresh notebook, add sources (full-text PDFs by file path + a notes doc for
+abstract-only papers), generate the Audio Overview with the steering prompt
+as custom_instructions, download the audio, prune old notebooks.
 
-ENDPOINT MAP: notebooklm-mcp is an unofficial project and its REST routes may
-differ between releases. The paths below are centralized in `EP` and MUST be
-verified once against the installed worker at deploy time —
-`python3 -m pipeline.podcast_nlm --probe` prints what the worker actually
-serves (docs/PODCAST_RUNBOOK.md §NLM). Everything else in this module is
-route-agnostic.
+Endpoint map verified against the project's OpenAPI spec
+(deployment/docs/openapi.yaml, checked 2026-08-31):
+    GET  /health
+    GET  /notebooks                     list
+    POST /notebooks/create              {name, description}
+    DELETE /notebooks/{id}
+    POST /content/sources               {source_type: file|text, file_path|text,
+                                         title, notebook_id/notebook_url}
+    POST /content/generate              {content_type: "audio_overview",
+                                         custom_instructions, ...} -> metadata
+    GET  /content/download?content_id=  -> audio bytes
+
+Releases may still drift from the spec — `python3 -m pipeline.podcast_nlm
+--probe` checks /health at install time (docs/PODCAST_RUNBOOK.md §NLM).
+
+PDF sources are passed by FILE PATH, resolved inside the worker (its Docker
+container must bind-mount the papersradar data dir); NLM_FILE_MAP rewrites
+host paths to container paths, e.g. "/srv/papersradar/data:/data/papersradar".
 """
 from __future__ import annotations
 
@@ -22,26 +35,12 @@ import sys
 import time
 import urllib.error
 import urllib.request
-import uuid
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from app.config import cfg, cfg_int
 
-# Verify against the installed notebooklm-mcp version (see module docstring).
-EP = {
-    "health":          "GET  /health",
-    "list_notebooks":  "GET  /notebooks",
-    "create_notebook": "POST /notebooks",                       # {"title"}
-    "delete_notebook": "DELETE /notebooks/{id}",
-    "add_text":        "POST /notebooks/{id}/sources/text",     # {"title","content"}
-    "add_file":        "POST /notebooks/{id}/sources/file",     # multipart pdf
-    "audio_create":    "POST /notebooks/{id}/audio",            # {"prompt"}
-    "audio_status":    "GET  /notebooks/{id}/audio/status",
-    "audio_download":  "GET  /notebooks/{id}/audio/download",
-}
-
-POLL_SEC = 30
+GENERATE_POLL_SEC = 30
 NOTEBOOK_PREFIX = "PapersRadar"
 
 
@@ -56,18 +55,12 @@ def _base() -> str:
     return base
 
 
-def _url(key: str, **fmt) -> tuple[str, str]:
-    method, _, path = EP[key].partition(" ")
-    return method.strip(), _base() + path.strip().format(**fmt)
-
-
-def _call(key: str, body: dict | None = None, raw: bytes | None = None,
-          content_type: str = "application/json", timeout: int = 120, **fmt):
-    method, url = _url(key, **fmt)
-    data = raw if raw is not None else (
-        json.dumps(body).encode() if body is not None else None)
+def _call(method: str, path: str, body: dict | None = None,
+          timeout: int = 120):
+    url = _base() + path
+    data = json.dumps(body).encode() if body is not None else None
     req = urllib.request.Request(url, data=data, method=method,
-                                 headers={"Content-Type": content_type})
+                                 headers={"Content-Type": "application/json"})
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
             payload = r.read()
@@ -78,41 +71,60 @@ def _call(key: str, body: dict | None = None, raw: bytes | None = None,
             detail = e.read().decode("utf-8", "replace")[:300]
         except Exception:
             pass
-        raise NLMError(f"{key}: HTTP {e.code} {detail}") from e
+        raise NLMError(f"{method} {path}: HTTP {e.code} {detail}") from e
     except Exception as e:
-        raise NLMError(f"{key}: {type(e).__name__}: {e}") from e
+        raise NLMError(f"{method} {path}: {type(e).__name__}: {e}") from e
     if "json" in ctype:
         return json.loads(payload or b"{}")
     return payload
 
 
-def _multipart(field: str, filename: str, content: bytes,
-               mime: str) -> tuple[bytes, str]:
-    boundary = uuid.uuid4().hex
-    body = (f"--{boundary}\r\nContent-Disposition: form-data; "
-            f'name="{field}"; filename="{filename}"\r\n'
-            f"Content-Type: {mime}\r\n\r\n").encode() + content \
-        + f"\r\n--{boundary}--\r\n".encode()
-    return body, f"multipart/form-data; boundary={boundary}"
+def map_path(host_path: Path) -> str:
+    """Host file path -> the path the worker sees (NLM_FILE_MAP
+    'host_prefix:worker_prefix'; empty = same filesystem view)."""
+    mapping = cfg("NLM_FILE_MAP", "").strip()
+    p = str(host_path)
+    if mapping and ":" in mapping:
+        host_prefix, _, worker_prefix = mapping.partition(":")
+        if p.startswith(host_prefix):
+            return worker_prefix + p[len(host_prefix):]
+    return p
+
+
+def _notebook_refs(nb) -> dict:
+    """Both id- and url-style references, so requests work across releases."""
+    refs = {}
+    if isinstance(nb, dict):
+        inner = nb.get("notebook") if isinstance(nb.get("notebook"), dict) else nb
+        for key in ("id", "notebook_id"):
+            if inner.get(key):
+                refs["notebook_id"] = inner[key]
+                break
+        for key in ("url", "notebook_url"):
+            if inner.get(key):
+                refs["notebook_url"] = inner[key]
+                break
+    if not refs:
+        raise NLMError(f"create returned no notebook reference: {str(nb)[:200]}")
+    return refs
 
 
 # --- the engine flow ----------------------------------------------------------
 
 def generate_episode(rows, fulltext_files: list[Path | None],
                      steering_prompt: str, date: str) -> bytes:
-    """One episode -> WAV bytes. rows = briefed papers in rank order;
+    """One episode -> audio bytes (WAV). rows = briefed papers in rank order;
     fulltext_files aligns with rows (None = abstract-only)."""
-    nb = _call("create_notebook", body={"title": f"{NOTEBOOK_PREFIX} {date}"})
-    nb_id = nb.get("id") or nb.get("notebook_id")
-    if not nb_id:
-        raise NLMError(f"create_notebook: no id in response {str(nb)[:200]}")
+    nb = _call("POST", "/notebooks/create",
+               {"name": f"{NOTEBOOK_PREFIX} {date}",
+                "description": "Daily Papers Radar episode sources"})
+    refs = _notebook_refs(nb)
     notes = []
     for i, (r, f) in enumerate(zip(rows, fulltext_files), 1):
         if f and f.suffix == ".pdf" and f.exists():
-            body, ctype = _multipart("file", f.name, f.read_bytes(),
-                                     "application/pdf")
-            _call("add_file", raw=body, content_type=ctype, timeout=300,
-                  id=nb_id)
+            _call("POST", "/content/sources", {
+                "source_type": "file", "file_path": map_path(f),
+                "title": r["title"], **refs}, timeout=300)
         else:
             authors = ", ".join(json.loads(r["authors_json"] or "[]")[:10])
             notes.append(
@@ -120,27 +132,43 @@ def generate_episode(rows, fulltext_files: list[Path | None],
                 f"Authors: {authors}\nVenue: {r['venue']}\n"
                 f"Published: {r['pub_date']}\nAbstract: {r['abstract']}")
     if notes:
-        _call("add_text", id=nb_id, body={
-            "title": "Briefing notes (abstract-only papers)",
-            "content": "\n\n".join(notes)})
-    _call("audio_create", id=nb_id, body={"prompt": steering_prompt},
-          timeout=300)
+        _call("POST", "/content/sources", {
+            "source_type": "text", "text": "\n\n".join(notes),
+            "title": "Briefing notes (abstract-only papers)", **refs},
+            timeout=300)
+    # /content/generate returns the artifact metadata when generation is done
+    # (NotebookLM takes minutes) — give it the full budget in one call.
+    meta = _call("POST", "/content/generate", {
+        "content_type": "audio_overview",
+        "custom_instructions": steering_prompt, **refs},
+        timeout=cfg_int("NLM_GENERATE_TIMEOUT_SEC"))
+    content_id = _content_id(meta)
     deadline = time.monotonic() + cfg_int("NLM_GENERATE_TIMEOUT_SEC")
     while True:
-        st = _call("audio_status", id=nb_id)
-        state = str(st.get("status") or st.get("state") or "").lower()
-        if state in ("ready", "done", "completed", "complete"):
-            break
-        if state in ("failed", "error"):
-            raise NLMError(f"audio generation failed: {str(st)[:200]}")
+        try:
+            audio = _call("GET", f"/content/download?content_id={content_id}",
+                          timeout=600)
+        except NLMError:
+            audio = None
+        if isinstance(audio, bytes) and len(audio) > 10_000:
+            return audio
         if time.monotonic() > deadline:
-            raise NLMError(f"audio generation timed out after "
-                           f"{cfg('NLM_GENERATE_TIMEOUT_SEC')}s")
-        time.sleep(POLL_SEC)
-    wav = _call("audio_download", id=nb_id, timeout=600)
-    if not isinstance(wav, bytes) or len(wav) < 10_000:
-        raise NLMError("audio download returned no usable audio")
-    return wav
+            raise NLMError("audio not downloadable before timeout "
+                           f"(content_id={content_id})")
+        time.sleep(GENERATE_POLL_SEC)
+
+
+def _content_id(meta) -> str:
+    if isinstance(meta, dict):
+        for key in ("content_id", "id", "artifact_id"):
+            if meta.get(key):
+                return str(meta[key])
+        inner = meta.get("artifact") or meta.get("content") or {}
+        if isinstance(inner, dict):
+            for key in ("content_id", "id"):
+                if inner.get(key):
+                    return str(inner[key])
+    raise NLMError(f"generate returned no content id: {str(meta)[:200]}")
 
 
 def prune_notebooks() -> int:
@@ -149,20 +177,21 @@ def prune_notebooks() -> int:
     cutoff = (dt.date.today()
               - dt.timedelta(days=cfg_int("NLM_RETENTION_DAYS"))).isoformat()
     try:
-        listing = _call("list_notebooks")
+        listing = _call("GET", "/notebooks")
     except NLMError:
         return 0
-    items = listing if isinstance(listing, list) else listing.get("notebooks", [])
+    items = listing if isinstance(listing, list) else (
+        listing.get("notebooks") or listing.get("items") or [])
     deleted = 0
     for nb in items:
-        title = str(nb.get("title") or nb.get("name") or "")
+        title = str(nb.get("name") or nb.get("title") or "")
         nb_id = nb.get("id") or nb.get("notebook_id")
         if not nb_id or not title.startswith(NOTEBOOK_PREFIX + " "):
             continue
         nb_date = title.rsplit(" ", 1)[-1]
         if nb_date < cutoff:
             try:
-                _call("delete_notebook", id=nb_id)
+                _call("DELETE", f"/notebooks/{nb_id}")
                 deleted += 1
             except NLMError:
                 pass
@@ -172,15 +201,11 @@ def prune_notebooks() -> int:
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--probe", action="store_true",
-                    help="check the worker's health endpoint and print the "
-                         "endpoint map to verify against its docs")
+                    help="check the worker's /health and list notebooks")
     a = ap.parse_args()
     if a.probe:
-        print("configured endpoint map (verify against the installed "
-              "notebooklm-mcp version):")
-        for k, v in EP.items():
-            print(f"  {k:16} {v}")
         try:
-            print("health:", str(_call("health"))[:300])
+            print("health:", str(_call("GET", "/health"))[:300])
+            print("notebooks:", str(_call("GET", "/notebooks"))[:300])
         except NLMError as e:
-            sys.exit(f"worker unreachable: {e}")
+            sys.exit(f"worker problem: {e}")

@@ -68,9 +68,14 @@ _DEFAULTS = {
     "GEMINI_TTS_MODEL": "gemini-2.5-flash-preview-tts",
     "GEMINI_TTS_BASE": "https://generativelanguage.googleapis.com",
     "PODCAST_ANCHOR_VOICE": "Charon",
-    # notebooklm-mcp worker: base URL of its local REST API; empty = the nlm
-    # engine reports "worker not configured" instead of failing hard.
+    # notebooklm-mcp worker: base URL of its local REST API (Docker image
+    # serves on 3000); empty = the nlm engine reports "worker not configured"
+    # instead of failing hard.
     "NLM_MCP_BASE": "",
+    # host_prefix:worker_prefix rewrite for PDF file paths (the worker
+    # resolves file_path inside its container; bind-mount the data dir), e.g.
+    # "/srv/papersradar/data:/data/papersradar". Empty = same filesystem view.
+    "NLM_FILE_MAP": "",
     # Shown in failure emails so re-auth is one click away (worker's noVNC).
     "NLM_VNC_URL": "",
     # Audio-overview generation wait (NotebookLM takes minutes)

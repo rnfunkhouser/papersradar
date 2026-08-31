@@ -90,44 +90,56 @@ Voice alternatives for `PODCAST_ANCHOR_VOICE` (measured options): `Charon`
 
 ## §NLM — the NotebookLM two-host engine
 
-One-time, ~an evening:
+Install details verified against github.com/roomi-fields/notebooklm-mcp
+(npm `@roomi-fields/notebooklm-mcp`; REST API on :3000, noVNC auth on :6080;
+endpoints per its `deployment/docs/openapi.yaml`, which
+`pipeline/podcast_nlm.py` now matches). One-time, ~an evening:
 
 1. **Dedicated Google account** (blast radius / ToS isolation — see
-   PODCAST_DESIGN.md Q&A). Create it; open notebooklm.google.com once to
-   accept terms.
-2. **Install the worker** on the VM:
+   PODCAST_DESIGN.md Q&A). Create it in a browser; open
+   notebooklm.google.com once to accept terms.
+2. **Install Docker + build/run the worker** on the VM (the Docker image
+   bundles Chromium, Xvfb, and noVNC — the sane path on a headless box):
    ```bash
-   sudo mkdir -p /srv/notebooklm-mcp && sudo chown papersradar /srv/notebooklm-mcp
-   cd /srv/notebooklm-mcp
-   sudo apt install -y nodejs npm
-   sudo -u papersradar npm install notebooklm-mcp   # github.com/roomi-fields/notebooklm-mcp
+   sudo apt install -y docker.io
+   git clone https://github.com/roomi-fields/notebooklm-mcp /srv/notebooklm-mcp
+   cd /srv/notebooklm-mcp && sudo docker build -t notebooklm-mcp .   # slow on 1 GB; be patient
+   sudo cp /srv/papersradar/app/deploy/notebooklm-worker.service /etc/systemd/system/
+   sudo systemctl daemon-reload && sudo systemctl enable --now notebooklm-worker
+   curl -s http://127.0.0.1:3000/health
    ```
-3. **One-time Google login** via the project's noVNC flow (its README;
-   typically `npm run setup-auth` + browse to `http://<vm>:6080/vnc.html`
-   through an SSH tunnel: `ssh -L 6080:127.0.0.1:6080 ...`). Log in as the
-   dedicated account. The session persists on disk.
-4. **Verify the endpoint map**: our client (`pipeline/podcast_nlm.py`)
-   centralizes the worker's REST routes in `EP` — notebooklm-mcp is
-   unofficial and its routes may differ by release. Compare with its docs,
-   adjust `EP` if needed, then:
+   (If the repo publishes a prebuilt image, `docker pull` it instead of
+   building and adjust the unit's image name.)
+3. **One-time Google login** — the only step that must be you:
    ```bash
+   # on your Mac: tunnel the worker's noVNC
+   ssh -L 6080:127.0.0.1:6080 -L 3000:127.0.0.1:3000 papersradar
+   # trigger the visible-browser auth flow:
+   curl -X POST http://127.0.0.1:3000/setup-auth -d '{"show_browser": true}'
+   # then open http://localhost:6080/vnc.html in your browser and sign in
+   # to Google AS THE DEDICATED ACCOUNT. The session persists in the
+   # notebooklm-data volume.
+   ```
+4. **Probe** (checks /health and lists notebooks through our client):
+   ```bash
+   cd /srv/papersradar/app
    sudo -u papersradar ENV_FILE=/srv/papersradar/.env \
        ../venv/bin/python3 -m pipeline.podcast_nlm --probe
    ```
-5. **Service + config**:
+5. **Config** in `/srv/papersradar/.env`, then the trial week begins at the
+   next 3:00am run:
    ```bash
-   sudo cp /srv/papersradar/app/deploy/notebooklm-worker.service /etc/systemd/system/
-   # adjust ExecStart if the package's serve command differs
-   sudo systemctl daemon-reload && sudo systemctl enable --now notebooklm-worker
+   NLM_MCP_BASE=http://127.0.0.1:3000
+   NLM_FILE_MAP=/srv/papersradar/data:/data/papersradar
+   NLM_VNC_URL=http://localhost:6080/vnc.html   # via the SSH tunnel above
+   PODCAST_ENGINES=anchor,nlm
    ```
-   In `.env`: `NLM_MCP_BASE=http://127.0.0.1:8100`,
-   `NLM_VNC_URL=<the tunnel/noVNC URL you used>`, and switch
-   `PODCAST_ENGINES=anchor,nlm` to start the trial week.
 
-The worker unit carries `MemoryMax=450M`: on the 1 GB box an OOM can only
-ever kill the worker (a Chromium-fallback moment), never the web app or
-pipeline — worst case is a missing [NLM] episode, reported in the email
-footer.
+The worker container is hard-capped at `--memory=450m`: on the 1 GB box an
+OOM can only ever kill the worker, never the web app or pipeline — worst
+case is a missing [NLM] episode, reported in the email footer. PDF sources
+reach the worker by file path through the read-only bind mount
+(`NLM_FILE_MAP` rewrites the prefix).
 
 ## Daily operation
 

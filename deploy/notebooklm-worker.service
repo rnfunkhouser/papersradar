@@ -1,22 +1,25 @@
 [Unit]
 Description=notebooklm-mcp worker (NotebookLM REST bridge for the podcast nlm engine)
-After=network.target
+After=network.target docker.service
+Requires=docker.service
 
 [Service]
 Type=simple
-User=papersradar
-Group=papersradar
-WorkingDirectory=/srv/notebooklm-mcp
-# Serve the local REST API only on loopback; see docs/PODCAST_RUNBOOK.md §NLM
-# for install + one-time Google login (noVNC). Adjust ExecStart to the
-# installed package's start command if it differs.
-ExecStart=/usr/bin/npx notebooklm-mcp serve --port 8100 --host 127.0.0.1
+# Docker image bundles Chromium + Xvfb + noVNC (auth) + the REST API (:3000).
+# --memory hard-caps the container: on the 1 GB box an OOM can only ever kill
+# this worker, never the web app or pipeline. Data dir mounted read-only so
+# PDF sources can be added by file path (NLM_FILE_MAP in .env rewrites the
+# prefix). noVNC (:6080) stays loopback-only — reach it via an SSH tunnel.
+ExecStartPre=-/usr/bin/docker rm -f notebooklm-mcp
+ExecStart=/usr/bin/docker run --name notebooklm-mcp \
+    --memory=450m --memory-swap=700m \
+    -p 127.0.0.1:3000:3000 -p 127.0.0.1:6080:6080 \
+    -v notebooklm-data:/data \
+    -v /srv/papersradar/data:/data/papersradar:ro \
+    notebooklm-mcp
+ExecStop=/usr/bin/docker stop notebooklm-mcp
 Restart=on-failure
 RestartSec=30
-# CRITICAL on the 1 GB box: the cgroup cap means an OOM can only ever kill
-# this worker (Chromium fallback moments), never the web app or pipeline.
-MemoryMax=450M
-Nice=10
 
 [Install]
 WantedBy=multi-user.target
