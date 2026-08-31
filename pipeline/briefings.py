@@ -185,10 +185,17 @@ def render_email(user, rows, date: str) -> str:
     </div>"""
 
 
+def email_deferred_to_podcast(user) -> bool:
+    """Podcast-enabled users get their briefing email from the podcast stage
+    instead (same email + episode status footer), so it can report on
+    episodes that don't exist yet when this stage runs."""
+    return bool(user["podcast_enabled"]) and bool(cfg("PODCAST_ENGINES").strip())
+
+
 def run(con, date: str | None = None) -> dict:
     date = date or appdb.today()
     today = dt.date.fromisoformat(date)
-    built = sent = backfilled = 0
+    built = sent = deferred = backfilled = 0
     for user in con.execute("SELECT * FROM users").fetchall():
         if not due_today(user, today):
             continue
@@ -197,10 +204,14 @@ def run(con, date: str | None = None) -> dict:
         if rows:
             built += 1
             if user["frequency"] != "none":
+                if email_deferred_to_podcast(user):
+                    deferred += 1
+                    continue
                 subj = f"Research Radar — {len(rows)} picks for {date}"
                 if mailer.send(user["email"], subj, render_email(user, rows, date)):
                     sent += 1
     summary = {"date": date, "users_with_items": built, "emails_sent": sent,
+               "emails_deferred_to_podcast": deferred,
                "relevance_backfilled": backfilled}
     print(f"[briefings] {summary}", file=sys.stderr)
     return summary

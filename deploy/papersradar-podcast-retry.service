@@ -1,0 +1,16 @@
+[Unit]
+Description=Papers Radar podcast retry (fill in episodes that failed at 3am)
+After=network.target
+
+[Service]
+Type=oneshot
+User=papersradar
+Group=papersradar
+WorkingDirectory=/srv/papersradar/app
+Environment=ENV_FILE=/srv/papersradar/.env
+# Idempotent: fulltext skips fetched papers, podcast skips ok episodes and
+# already-sent emails — this run only fills in what the 3am run missed.
+ExecStart=/usr/bin/nice -n 10 /srv/papersradar/venv/bin/python3 -m pipeline.run_daily fulltext
+ExecStart=/usr/bin/nice -n 10 /srv/papersradar/venv/bin/python3 -m pipeline.run_daily podcast
+MemoryMax=500M
+TimeoutStartSec=2h

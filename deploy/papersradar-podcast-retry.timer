@@ -1,0 +1,9 @@
+[Unit]
+Description=Retry the Papers Radar podcast stage 90 minutes after the daily run
+
+[Timer]
+OnCalendar=*-*-* 04:30:00 America/Los_Angeles
+Persistent=true
+
+[Install]
+WantedBy=timers.target

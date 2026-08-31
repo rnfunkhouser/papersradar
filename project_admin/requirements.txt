@@ -7,6 +7,10 @@ python-multipart==0.0.20
 certifi==2024.12.14
 # Pipeline only (never imported by the web app)
 numpy==2.2.2
+# Podcast stage (pure-python): PDF text extraction + MP3 chapter tags.
+# MP3 encoding itself uses the system ffmpeg (apt install ffmpeg).
+pypdf==5.1.0
+mutagen==1.47.0
 # Tests
 pytest==8.3.4
 httpx==0.28.1

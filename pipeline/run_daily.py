@@ -13,7 +13,10 @@ Stages (sequential, 1 GB RAM budget — nothing runs in parallel):
   gather           shared corpus from OpenAlex/arXiv/OSF (union of user concepts)
   embed            embed corpus papers missing a vector (batched, resumable)
   shortlist-judge  per user: cosine shortlist -> batched-8 LLM judge -> judgments
-  briefings        per user due today: briefing_items + email digest
+  briefings        per user due today: briefing_items + email digest (podcast
+                   users' emails are deferred to the podcast stage)
+  fulltext         OA full text for papers briefed to podcast users
+  podcast          episodes (anchor/nlm engines) + deferred emails w/ status
 """
 from __future__ import annotations
 
@@ -160,7 +163,18 @@ def stage_briefings(con, date=None):
     return briefings.run(con, date)
 
 
-STAGES = ["profiles", "gather", "embed", "shortlist-judge", "briefings"]
+def stage_fulltext(con, date=None):
+    from pipeline import fetch_fulltext
+    return fetch_fulltext.run(con, date)
+
+
+def stage_podcast(con, date=None):
+    from pipeline import podcast
+    return podcast.run(con, date)
+
+
+STAGES = ["profiles", "gather", "embed", "shortlist-judge", "briefings",
+          "fulltext", "podcast"]
 
 
 def main():
@@ -181,6 +195,8 @@ def main():
             "embed": lambda: stage_embed(con),
             "shortlist-judge": lambda: stage_shortlist_judge(con),
             "briefings": lambda: stage_briefings(con, a.date),
+            "fulltext": lambda: stage_fulltext(con, a.date),
+            "podcast": lambda: stage_podcast(con, a.date),
         }[stage]
         ok = _staged(con, stage, fn) and ok
     sys.exit(0 if ok else 1)

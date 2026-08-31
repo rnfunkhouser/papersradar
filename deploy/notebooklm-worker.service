@@ -1,0 +1,22 @@
+[Unit]
+Description=notebooklm-mcp worker (NotebookLM REST bridge for the podcast nlm engine)
+After=network.target
+
+[Service]
+Type=simple
+User=papersradar
+Group=papersradar
+WorkingDirectory=/srv/notebooklm-mcp
+# Serve the local REST API only on loopback; see docs/PODCAST_RUNBOOK.md §NLM
+# for install + one-time Google login (noVNC). Adjust ExecStart to the
+# installed package's start command if it differs.
+ExecStart=/usr/bin/npx notebooklm-mcp serve --port 8100 --host 127.0.0.1
+Restart=on-failure
+RestartSec=30
+# CRITICAL on the 1 GB box: the cgroup cap means an OOM can only ever kill
+# this worker (Chromium fallback moments), never the web app or pipeline.
+MemoryMax=450M
+Nice=10
+
+[Install]
+WantedBy=multi-user.target

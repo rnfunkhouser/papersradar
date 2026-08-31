@@ -57,6 +57,30 @@ _DEFAULTS = {
     "COACH_DAILY_LIMIT": "10",
     # Vote-informed profile audit unlocks at this many votes
     "AUDIT_MIN_VOTES": "20",
+    # --- daily podcast (owner-only; see docs/PODCAST_DESIGN.md) --------------
+    # Comma-separated engines to run each day; empty = feature off globally.
+    # "anchor" = scripted single-anchor (writer LLM -> Gemini TTS free tier);
+    # "nlm" = NotebookLM two-host via a self-hosted notebooklm-mcp worker.
+    # Trial week runs "anchor,nlm".
+    "PODCAST_ENGINES": "",
+    # Gemini TTS: preview model names churn — if this 404s, list live models
+    # (docs/PODCAST_RUNBOOK.md §TTS) and update here.
+    "GEMINI_TTS_MODEL": "gemini-2.5-flash-preview-tts",
+    "GEMINI_TTS_BASE": "https://generativelanguage.googleapis.com",
+    "PODCAST_ANCHOR_VOICE": "Charon",
+    # notebooklm-mcp worker: base URL of its local REST API; empty = the nlm
+    # engine reports "worker not configured" instead of failing hard.
+    "NLM_MCP_BASE": "",
+    # Shown in failure emails so re-auth is one click away (worker's noVNC).
+    "NLM_VNC_URL": "",
+    # Audio-overview generation wait (NotebookLM takes minutes)
+    "NLM_GENERATE_TIMEOUT_SEC": "1800",
+    # Fresh notebook daily; worker deletes notebooks older than this
+    "NLM_RETENTION_DAYS": "7",
+    # Full-text fetch (OA-only; briefed papers of podcast users)
+    "UNPAYWALL_BASE": "https://api.unpaywall.org",
+    "ARXIV_PDF_BASE": "https://arxiv.org",
+    "FULLTEXT_MAX_MB": "30",
 }
 
 _cache: dict | None = None

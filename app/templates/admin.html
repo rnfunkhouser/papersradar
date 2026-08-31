@@ -35,6 +35,21 @@
     </table></div>
   </div>
 
+  {% if podcast_episodes %}
+  <div class="panel">
+    <h3>Podcast — recent episodes</h3>
+    <div class="tablewrap"><table>
+      <tr><th>date</th><th>user</th><th>engine</th><th>status</th><th>length</th><th>detail</th></tr>
+      {% for e in podcast_episodes %}
+      <tr><td>{{ e.date }}</td><td>{{ e.email }}</td><td>{{ e.engine }}</td>
+          <td class="status-{{ 'ok' if e.status == 'ok' else 'error' }}">{{ e.status }}</td>
+          <td>{{ (e.duration_sec // 60) ~ ':' ~ '%02d' % (e.duration_sec % 60) if e.status == 'ok' else '—' }}</td>
+          <td style="max-width:380px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ e.detail or e.mime }}</td></tr>
+      {% endfor %}
+    </table></div>
+  </div>
+  {% endif %}
+
   <div class="panel">
     <h3>Pipeline runs</h3>
     <div class="tablewrap"><table>

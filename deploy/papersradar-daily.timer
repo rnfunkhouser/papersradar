@@ -2,8 +2,9 @@
 Description=Run the Papers Radar pipeline every morning
 
 [Timer]
-# 11:57 UTC = 04:57 PT (mirrors the old system's schedule)
-OnCalendar=*-*-* 11:57:00 UTC
+# 3:00am Pacific (DST-aware) so podcast episodes are in the feed by the 4:00am
+# target (docs/PODCAST_DESIGN.md); was 11:57 UTC = 04:57 PDT pre-podcast.
+OnCalendar=*-*-* 03:00:00 America/Los_Angeles
 Persistent=true
 
 [Install]

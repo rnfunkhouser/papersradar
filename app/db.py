@@ -195,6 +195,46 @@ CREATE TABLE IF NOT EXISTS data_migrations (
     name        TEXT PRIMARY KEY,
     applied_at  TEXT NOT NULL
 );
+-- Open-access full text fetched for briefed papers (podcast grounding; see
+-- docs/PODCAST_DESIGN.md). Shared corpus data, keyed by paper — status 'none'
+-- is a negative cache so a paper with no OA copy isn't retried daily.
+CREATE TABLE IF NOT EXISTS paper_fulltext (
+    paper_id    INTEGER PRIMARY KEY REFERENCES papers(id),
+    status      TEXT NOT NULL,                 -- ok | none
+    path        TEXT DEFAULT '',               -- relative to the data dir
+    route       TEXT DEFAULT '',               -- arxiv-pdf | unpaywall-pdf | unpaywall-page | oa_url
+    kind        TEXT DEFAULT '',               -- pdf | html
+    bytes       INTEGER DEFAULT 0,
+    fetched_at  TEXT NOT NULL
+);
+-- Daily podcast episodes (owner-only feature for now; users.podcast_enabled
+-- gates it). One row per (user, date, engine) — the trial runs two engines.
+CREATE TABLE IF NOT EXISTS podcast_episodes (
+    id          INTEGER PRIMARY KEY,
+    user_id     INTEGER NOT NULL REFERENCES users(id),
+    date        TEXT NOT NULL,
+    engine      TEXT NOT NULL,                 -- anchor | nlm
+    status      TEXT NOT NULL,                 -- ok | error
+    detail      TEXT DEFAULT '',               -- error cause, for the email footer
+    title       TEXT DEFAULT '',
+    audio_path  TEXT DEFAULT '',               -- relative to the data dir
+    mime        TEXT DEFAULT '',               -- audio/mpeg | audio/wav
+    bytes       INTEGER DEFAULT 0,
+    duration_sec INTEGER DEFAULT 0,
+    chapters_json TEXT DEFAULT '[]',           -- [{start_sec, title}]
+    shownotes_html TEXT DEFAULT '',
+    created_at  TEXT NOT NULL,
+    UNIQUE(user_id, date, engine)
+);
+-- The briefing email for podcast users is sent by the podcast stage (so it
+-- can carry the episode status footer); this makes that send idempotent
+-- across the 90-minute retry run.
+CREATE TABLE IF NOT EXISTS podcast_email_log (
+    user_id     INTEGER NOT NULL REFERENCES users(id),
+    date        TEXT NOT NULL,
+    sent_at     TEXT NOT NULL,
+    UNIQUE(user_id, date)
+);
 -- RESERVED for per-user inbound email (Scholar alert forwarding) — nothing
 -- writes this yet; see DESIGN.md §7.
 CREATE TABLE IF NOT EXISTS email_ingest (
@@ -242,6 +282,13 @@ MIGRATIONS = [
     # users who progressed before the fork existed continue as 'manual'.
     ("users", "onboarding_path",
      "ALTER TABLE users ADD COLUMN onboarding_path TEXT DEFAULT ''"),
+    # Daily podcast (2026-08, owner-only for now): enabled flag + the secret
+    # in the user's private RSS feed URL. Set via `python3 -m pipeline.podcast
+    # enable <email>`; no self-serve UI yet.
+    ("users", "podcast_enabled",
+     "ALTER TABLE users ADD COLUMN podcast_enabled INTEGER DEFAULT 0"),
+    ("users", "podcast_token",
+     "ALTER TABLE users ADD COLUMN podcast_token TEXT DEFAULT ''"),
 ]
 
 
@@ -377,6 +424,14 @@ def delete_user_cascade(con, uid: int) -> None:
     con.execute("DELETE FROM coach_drafts WHERE user_id=?", (uid,))
     con.execute("DELETE FROM profile_audits WHERE user_id=?", (uid,))
     con.execute("DELETE FROM profiles WHERE user_id=?", (uid,))
+    for r in con.execute("SELECT audio_path FROM podcast_episodes "
+                         "WHERE user_id=? AND audio_path != ''", (uid,)).fetchall():
+        try:
+            (db_path().parent / r["audio_path"]).unlink(missing_ok=True)
+        except OSError:
+            pass
+    con.execute("DELETE FROM podcast_episodes WHERE user_id=?", (uid,))
+    con.execute("DELETE FROM podcast_email_log WHERE user_id=?", (uid,))
     con.execute("DELETE FROM email_ingest WHERE user_id=?", (uid,))
     con.execute("DELETE FROM auth_tokens WHERE email=?", (email,))
     con.execute("DELETE FROM login_attempts WHERE email=?", (email,))

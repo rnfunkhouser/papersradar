@@ -48,9 +48,14 @@ def admin(request: Request):
             "ORDER BY id DESC LIMIT 10").fetchall()
         n_papers = con.execute("SELECT COUNT(*) c FROM papers").fetchone()["c"]
         n_vectors = con.execute("SELECT COUNT(*) c FROM paper_embeddings").fetchone()["c"]
+        podcast_episodes = con.execute(
+            "SELECT e.*, u.email FROM podcast_episodes e "
+            "JOIN users u ON u.id = e.user_id "
+            "ORDER BY e.date DESC, u.email, e.engine LIMIT 14").fetchall()
         return render(request, "admin.html", {
             "users": users, "runs": runs, "usage": usage, "errors": errors,
             "caps": PROVIDER_CAPS, "n_papers": n_papers, "n_vectors": n_vectors,
+            "podcast_episodes": podcast_episodes,
             "dev_mode": not smtp_configured(),
         })
     finally:

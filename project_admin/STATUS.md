@@ -148,3 +148,29 @@ Deployed + verified live:
   over-broadness warning, autofill seed sampling fix, exemplar elicitation,
   de-founder the judge rubric band, bullseye/permission-clause patterns) —
   PROPOSALS ONLY, awaiting owner's copy pass over docs/site-copy.md.
+
+## 2026-08-31 — daily podcast (owner-only): built + tested, awaiting VM deploy
+Spec locked with owner in docs/PODCAST_DESIGN.md; deploy-by-hand steps in
+docs/PODCAST_RUNBOOK.md. Built (130 tests passing, 16 new, fully offline):
+- Pipeline stages `fulltext` (OA-only fetch for podcast users' briefed papers:
+  arXiv → Unpaywall → oa_url, sniffed PDF/HTML, negative cache in
+  paper_fulltext) and `podcast` (per podcast-enabled user, every engine in
+  PODCAST_ENGINES; idempotent for the 4:30am retry timer).
+- Engines: `anchor` = scripted single-anchor in the locked journalistic
+  register (segment-per-paper via provider router → Gemini TTS free tier →
+  ffmpeg MP3 with ID3 per-paper chapters; WAV fallback sans ffmpeg);
+  `nlm` = NotebookLM two-host via self-hosted notebooklm-mcp worker
+  (pipeline/podcast_nlm.py; endpoint map EP must be verified at install —
+  runbook §NLM). Trial week = both, [Anchor]/[NLM] items in one feed.
+- Private RSS: /podcast/<token>/feed.xml (+ episode/chapters routes), iTunes
+  tags, itunes:block, procedural radar cover art (tools/make_cover.py).
+- Briefing email for podcast users is deferred to the podcast stage and gains
+  the episode status footer (✅ duration / ⚠️ cause + noVNC re-login link);
+  send idempotent via podcast_email_log. /admin shows the episode table.
+- Enable via `python3 -m pipeline.podcast enable <email>` (mints feed token).
+- Deploy assets: daily timer moved to 3:00am America/Los_Angeles (episodes by
+  4:00), papersradar-podcast-retry.{service,timer} (4:30), notebooklm-worker
+  .service (MemoryMax=450M so OOM can only kill the worker). New deps:
+  pypdf, mutagen; system ffmpeg.
+Next (owner, on the VM): runbook §1–4 for anchor engine day one; §NLM for the
+NotebookLM engine + trial week; verify GEMINI key project has no billing.
