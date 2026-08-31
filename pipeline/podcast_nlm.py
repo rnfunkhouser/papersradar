@@ -75,7 +75,14 @@ def _call(method: str, path: str, body: dict | None = None,
     except Exception as e:
         raise NLMError(f"{method} {path}: {type(e).__name__}: {e}") from e
     if "json" in ctype:
-        return json.loads(payload or b"{}")
+        data = json.loads(payload or b"{}")
+        # the worker wraps JSON responses in a {"success", "data"} envelope
+        # (observed live 2026-08-31); unwrap so callers see the object itself
+        if isinstance(data, dict) and "success" in data and "data" in data:
+            if not data["success"]:
+                raise NLMError(f"{method} {path}: {str(data)[:300]}")
+            return data["data"]
+        return data
     return payload
 
 
