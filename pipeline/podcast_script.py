@@ -44,9 +44,15 @@ FULLTEXT_INSTRUCTIONS = f"""\
 Write the narration segment for ONE paper for which the full text is provided
 below (target {FULLTEXT_WORDS[0]}–{FULLTEXT_WORDS[1]} words, about three to
 four minutes read aloud):
-- Introduce with institutions, lead author ("... and colleagues"), and venue,
-  woven into prose (e.g., "The next paper today comes from a team at ___ led
-  by ___, published in ___, examining ___").
+- OPEN WITH FRAMING, not facts: one or two sentences that orient the listener
+  in plain conceptual terms — what area this paper sits in and what it is
+  about — before any specifics land (e.g., "This next paper is about how
+  culture-war language travels between platforms. The team was interested in
+  the word 'woke' as a rhetorical hinge in that discourse."). Then move into
+  the substance.
+- Weave in institutions, lead author ("... and colleagues"), and venue as the
+  framing hands off to the substance (e.g., "The work comes from a team at
+  ___ led by ___, published in ___").
 - The research question and why it was open.
 - Design and data with specifics from the full text: sample sizes,
   identification strategy, key effect sizes with uncertainty, spoken precisely
@@ -60,9 +66,11 @@ four minutes read aloud):
 ABSTRACT_INSTRUCTIONS = f"""\
 Write the narration segment for ONE paper for which ONLY the abstract is
 available (at most {ABSTRACT_WORDS} words, under a minute read aloud):
-- Introduce with institutions, lead author, and venue woven into prose, state
-  plainly that only the abstract is available, summarize the claims
-  cautiously, and note what a reader would want to verify in the full paper."""
+- Open with ONE plain-language framing sentence saying what the paper is
+  about before any specifics, then weave in institutions, lead author, and
+  venue, state plainly that only the abstract is available, summarize the
+  claims cautiously, and note what a reader would want to verify in the full
+  paper."""
 
 
 def _authors(paper) -> list[str]:
@@ -165,7 +173,9 @@ def nlm_steering_prompt(rows, fulltexts: list[str], date: str) -> str:
         "standard research-methods terminology; the listener is an expert. "
         "One host presents each paper — naming the institutions, lead "
         "author, and journal — and the other asks only substantive "
-        "methodological questions. "
+        "methodological questions. Open every paper with a sentence or two "
+        "of plain-language framing (what the paper is about and the area it "
+        "sits in) before any specific findings or numbers. "
         f"For the papers provided as full documents ({ft_list}), spend three "
         "to four minutes each and discuss the actual methods, sample sizes, "
         "and effect sizes with specific numbers. "
