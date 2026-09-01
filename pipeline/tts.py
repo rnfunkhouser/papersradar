@@ -35,10 +35,14 @@ BYTES_PER_SEC = SAMPLE_RATE * 2
 MP3_KBPS = 64
 TTS_TIMEOUT = 300
 
-# Read-style directive prefixed to every request; the register itself lives in
-# the script text (podcast_script.REGISTER).
-STYLE = ("Read the following in a measured, professional news-broadcast "
-         "tone at a moderate pace, like a serious morning radio briefing: ")
+# Read-style directive prefixed to every request. Long inputs sometimes make
+# the TTS model answer instead of read (HTTP 400 "Model tried to generate
+# text", hit live 2026-09-01) — per the error's own guidance, the framing
+# must make explicit that what follows is a transcript to be voiced verbatim.
+STYLE = ("Generate audio only: read the following finished transcript aloud "
+         "verbatim, exactly as written, adding nothing. Delivery: measured, "
+         "professional news-broadcast tone at a moderate pace, like a "
+         "serious morning radio briefing.\n\nTRANSCRIPT:\n")
 
 
 class TTSError(Exception):
@@ -78,15 +82,20 @@ def _pace():
 
 
 def synthesize(text: str, voice: str | None = None) -> bytes:
-    """One paced TTS call (429s retried) -> raw PCM (s16le mono 24 kHz)."""
+    """One paced TTS call -> raw PCM (s16le mono 24 kHz). Retries 429s (with
+    the server's retryDelay) and the nondeterministic "tried to generate
+    text" 400 (long inputs occasionally trip it; a retry usually reads)."""
     import time
     for attempt in range(RETRIES_429 + 1):
         _pace()
         try:
             return _request(text, voice)
         except TTSError as e:
-            if e.code == 429 and attempt < RETRIES_429:
-                time.sleep(max(e.retry_delay, 30.0))
+            if attempt < RETRIES_429 and (
+                    e.code == 429
+                    or (e.code == 400 and "generate text" in str(e))):
+                if e.code == 429:
+                    time.sleep(max(e.retry_delay, 30.0))
                 continue
             raise
 
