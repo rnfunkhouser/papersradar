@@ -80,6 +80,14 @@ _DEFAULTS = {
     "NLM_VNC_URL": "",
     # Audio-overview generation wait (NotebookLM takes minutes)
     "NLM_GENERATE_TIMEOUT_SEC": "1800",
+    # nlm engine implementation: "agent" (vision-driven computer-use loop in
+    # the nlm-agent container; robust to Google UI redesigns) or "mcp"
+    # (legacy selector-based worker flow; pre-2026-07 UI only).
+    "NLM_MODE": "agent",
+    # Computer-use-capable model for the agent loop
+    "NLM_CU_MODEL": "gemini-3.7-flash",
+    # Docker image tag the podcast stage invokes per episode
+    "NLM_AGENT_IMAGE": "nlm-agent",
     # Fresh notebook daily; worker deletes notebooks older than this
     "NLM_RETENTION_DAYS": "7",
     # Full-text fetch (OA-only; briefed papers of podcast users)

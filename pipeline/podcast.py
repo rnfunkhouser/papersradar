@@ -115,17 +115,119 @@ def run_anchor(con, user, rows, date: str, title: str) -> dict:
                         chapters=chapters)
 
 
-def run_nlm(con, user, rows, date: str, title: str) -> dict:
-    from pipeline import podcast_nlm
+def _nlm_inputs(con, rows, date: str):
+    """(pdf paths, notes blocks, steering prompt) for the nlm engines."""
     data_dir = db_path().parent
-    files, fulltexts = [], []
-    for r in rows:
+    files, fulltexts, notes = [], [], []
+    for i, r in enumerate(rows, 1):
         ft = con.execute(
             "SELECT * FROM paper_fulltext WHERE paper_id=? AND status='ok' "
             "AND kind='pdf'", (r["id"],)).fetchone()
         files.append(data_dir / ft["path"] if ft else None)
         fulltexts.append("x" if ft else "")
+        if not ft:
+            authors = ", ".join(json.loads(r["authors_json"] or "[]")[:10])
+            notes.append(
+                f"Paper {i} (ABSTRACT ONLY — flag this on air): {r['title']}\n"
+                f"Authors: {authors}\nVenue: {r['venue']}\n"
+                f"Published: {r['pub_date']}\nAbstract: {r['abstract']}")
     prompt = podcast_script.nlm_steering_prompt(rows, fulltexts, date)
+    return files, notes, prompt
+
+
+def _mux_downloaded(audio_file: Path, title: str, out_stem: Path) -> dict:
+    """Downloaded NotebookLM audio -> episode info dict. WAV goes through the
+    normal PCM path; other formats are transcoded by ffmpeg when present,
+    else served as-is."""
+    import shutil as _sh
+    import subprocess as _sp
+    if audio_file.suffix == ".wav":
+        pcm = tts.wav_to_pcm(audio_file.read_bytes())
+        return tts.assemble([pcm], [title], out_stem)
+    if _sh.which("ffmpeg"):
+        out = out_stem.with_suffix(".mp3")
+        out.parent.mkdir(parents=True, exist_ok=True)
+        proc = _sp.run(["ffmpeg", "-y", "-loglevel", "error",
+                        "-i", str(audio_file), "-b:a", "64k", str(out)],
+                       capture_output=True)
+        if proc.returncode == 0 and out.exists():
+            dur = _sp.run(["ffprobe", "-v", "error", "-show_entries",
+                           "format=duration", "-of", "csv=p=0", str(out)],
+                          capture_output=True, text=True)
+            try:
+                duration = round(float(dur.stdout.strip()))
+            except ValueError:
+                duration = 0
+            return {"path": out, "mime": "audio/mpeg",
+                    "bytes": out.stat().st_size, "duration_sec": duration,
+                    "chapters": [{"start_sec": 0, "title": title}]}
+    dest = out_stem.with_suffix(audio_file.suffix)
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    dest.write_bytes(audio_file.read_bytes())
+    mime = {"mp3": "audio/mpeg", "m4a": "audio/mp4"}.get(
+        audio_file.suffix.lstrip("."), "audio/mpeg")
+    return {"path": dest, "mime": mime, "bytes": dest.stat().st_size,
+            "duration_sec": 0, "chapters": [{"start_sec": 0, "title": title}]}
+
+
+def nlm_agent_cmd(job_path: Path, jobs_dir: Path, data_dir: Path) -> list[str]:
+    """The docker invocation for one agent run (unit-tested)."""
+    # the API key travels via `-e NAME` passthrough (subprocess env), never argv
+    return [
+        "docker", "run", "--rm", "--memory=450m", "--memory-swap=700m",
+        "-e", "GEMINI_API_KEY",
+        "-e", f"NLM_CU_MODEL={cfg('NLM_CU_MODEL')}",
+        "-e", f"NLM_GENERATE_TIMEOUT_SEC={cfg('NLM_GENERATE_TIMEOUT_SEC')}",
+        "-v", "notebooklm-data:/data:ro",
+        "-v", f"{data_dir}:/papers:ro",
+        "-v", f"{jobs_dir}:/out",
+        cfg("NLM_AGENT_IMAGE"),
+        "--job", f"/out/{job_path.name}",
+    ]
+
+
+def run_nlm_agent(con, user, rows, date: str, title: str) -> dict:
+    """Vision-driven agent engine (Gemini computer use in the nlm-agent
+    container) — the post-'Gemini Notebook'-redesign replacement for the
+    selector-based notebooklm-mcp flow."""
+    import subprocess
+    data_dir = db_path().parent
+    files, notes, prompt = _nlm_inputs(con, rows, date)
+    jobs_dir = data_dir / "nlm_jobs" / f"{user['id']}_{date}"
+    jobs_dir.mkdir(parents=True, exist_ok=True)
+    job = {
+        "date": date,
+        "steering_prompt": prompt,
+        "pdfs": [f"/papers/{f.relative_to(data_dir)}" for f in files if f],
+        "notes_title": "Briefing notes (abstract-only papers)",
+        "notes_text": "\n\n".join(notes),
+        "out_dir": "/out",
+    }
+    job_path = jobs_dir / "job.json"
+    job_path.write_text(json.dumps(job, indent=2))
+    timeout = int(cfg("NLM_GENERATE_TIMEOUT_SEC")) + 1200
+    import os
+    env = dict(os.environ, GEMINI_API_KEY=cfg("GEMINI_API_KEY"))
+    proc = subprocess.run(nlm_agent_cmd(job_path, jobs_dir, data_dir),
+                          capture_output=True, timeout=timeout, env=env)
+    result_file = jobs_dir / "result.json"
+    result = (json.loads(result_file.read_text())
+              if result_file.exists() else {})
+    if not result.get("ok"):
+        err = result.get("error") or proc.stderr.decode(
+            "utf-8", "replace")[-300:] or f"agent rc={proc.returncode}"
+        raise RuntimeError(f"nlm-agent [{result.get('error_kind', '?')}] {err}")
+    audio = jobs_dir / Path(result["audio_path"]).name
+    print(f"[podcast] nlm-agent ok in {result.get('steps_used', '?')} steps",
+          file=sys.stderr)
+    return _mux_downloaded(audio, title,
+                           _episode_dir(user["id"]) / f"{date}_nlm")
+
+
+def run_nlm_mcp(con, user, rows, date: str, title: str) -> dict:
+    """Legacy notebooklm-mcp flow (selector-based; pre-redesign UI only)."""
+    from pipeline import podcast_nlm
+    files, notes, prompt = _nlm_inputs(con, rows, date)
     wav = podcast_nlm.generate_episode(rows, files, prompt, date)
     pcm = tts.wav_to_pcm(wav)
     info = tts.assemble([pcm], [title], _episode_dir(user["id"]) / f"{date}_nlm")
@@ -133,6 +235,12 @@ def run_nlm(con, user, rows, date: str, title: str) -> dict:
     if deleted:
         print(f"[podcast] pruned {deleted} old notebooks", file=sys.stderr)
     return info
+
+
+def run_nlm(con, user, rows, date: str, title: str) -> dict:
+    if cfg("NLM_MODE") == "mcp":
+        return run_nlm_mcp(con, user, rows, date, title)
+    return run_nlm_agent(con, user, rows, date, title)
 
 
 ENGINES = {"anchor": run_anchor, "nlm": run_nlm}
