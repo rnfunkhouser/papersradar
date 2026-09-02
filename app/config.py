@@ -41,8 +41,16 @@ _DEFAULTS = {
     "JUDGE_SHORTLIST_PER_USER": "40",
     "BRIEFING_MIN_FIT": "6",
     "BRIEFING_MAX_ITEMS": "5",
-    "GATHER_WINDOW_DAYS": "4",
-    "OPENALEX_MAX_PER_CONCEPT": "800",
+    # 14-day gather window + deep per-concept cap (2026-09-02, owner-approved):
+    # matches the old system's validated buffer design and the 14-day
+    # shortlist eligibility window (shortlist.WINDOW_DAYS). OpenAlex ingests
+    # in bursts with near-zero days between (measured: 2,437-3,591 on batch
+    # days, 4-16 on troughs); a shallow window + tight cap left zero unbriefed
+    # fit>=8 reserve, so troughs briefed 7-point residue. The wide window
+    # keeps strong papers re-competing; the cap must widen with it or
+    # pub-date-desc paging truncates back to the same recent slice.
+    "GATHER_WINDOW_DAYS": "14",
+    "OPENALEX_MAX_PER_CONCEPT": "2400",
     # Priority journals: papers from a user's chosen journals get guaranteed
     # judge slots when their embedding relevance is at or above this percentile
     # of the user's windowed pool (chosen empirically — see

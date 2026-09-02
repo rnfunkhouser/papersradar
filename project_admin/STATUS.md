@@ -211,3 +211,16 @@ fixed (cookie sync-back in finally); one noVNC re-login was needed after the
 earlier burn. Trial week runs automatically from the 3:00am pipeline; the
 [NLM] runtime (~22 min vs the 8-12 min spec) is steered by the customization
 prompt only softly — a tuning candidate if the owner finds it long.
+
+## 2026-09-02 — gather buffer: 14-day window + 2400/concept cap (owner-approved)
+Root-caused "further afield" Sep 2 edition: OpenAlex ingests in bursts
+(2,437-3,591 new works on batch days; 4-16 on troughs — Aug 25 precedent
+predates all schedule changes), and the 4-day/800-cap gather left ZERO
+unbriefed fit>=8 reserve, so trough days briefed 7-point residue while the
+old uidaho system (14-day window, 5/day) sailed through. Fix = two config
+knobs, no code (shortlist eligibility was already 14-day):
+GATHER_WINDOW_DAYS=14, OPENALEX_MAX_PER_CONCEPT=2400 — surplus high-fit
+papers now bank and re-compete across troughs. Owner declined the extra
+quality-floor knob. Catch-up gather+embed run same day; effect from the
+next 3:00am run. Watch: gather counts, embed quota, bank depth
+(SELECT COUNT(*) FROM judgments WHERE fit>=8 AND paper NOT briefed).
