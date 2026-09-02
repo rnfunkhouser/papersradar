@@ -174,11 +174,15 @@ def nlm_agent_cmd(job_path: Path, jobs_dir: Path, data_dir: Path) -> list[str]:
     """The docker invocation for one agent run (unit-tested)."""
     # the API key travels via `-e NAME` passthrough (subprocess env), never argv
     return [
-        "docker", "run", "--rm", "--memory=450m", "--memory-swap=700m",
+        "docker", "run", "--rm", f"--name=nlm-agent-{jobs_dir.name}",
+        "--memory=450m", "--memory-swap=700m",
         "-e", "GEMINI_API_KEY",
         "-e", f"NLM_CU_MODEL={cfg('NLM_CU_MODEL')}",
         "-e", f"NLM_GENERATE_TIMEOUT_SEC={cfg('NLM_GENERATE_TIMEOUT_SEC')}",
-        "-v", "notebooklm-data:/data:ro",
+        # rw: the agent runs from the persistent Chrome profile and is the
+        # session's primary user (state.json snapshots go stale — see
+        # pipeline/nlm_agent.py); the worker remains for noVNC re-auth only
+        "-v", "notebooklm-data:/data",
         "-v", f"{data_dir}:/papers:ro",
         "-v", f"{jobs_dir}:/out",
         cfg("NLM_AGENT_IMAGE"),
@@ -208,8 +212,22 @@ def run_nlm_agent(con, user, rows, date: str, title: str) -> dict:
     timeout = int(cfg("NLM_GENERATE_TIMEOUT_SEC")) + 1200
     import os
     env = dict(os.environ, GEMINI_API_KEY=cfg("GEMINI_API_KEY"))
-    proc = subprocess.run(nlm_agent_cmd(job_path, jobs_dir, data_dir),
-                          capture_output=True, timeout=timeout, env=env)
+    cmd = nlm_agent_cmd(job_path, jobs_dir, data_dir)
+    # a fresh run must not collide with a leftover container of the same name
+    subprocess.run(["docker", "rm", "-f", f"nlm-agent-{jobs_dir.name}"],
+                   capture_output=True)
+    try:
+        proc = subprocess.run(cmd, capture_output=True, timeout=timeout,
+                              env=env)
+    except subprocess.TimeoutExpired:
+        # kill the CONTAINER too — timing out the client leaves it running
+        subprocess.run(["docker", "rm", "-f", f"nlm-agent-{jobs_dir.name}"],
+                       capture_output=True)
+        raise
+    agent_log = proc.stderr.decode("utf-8", "replace")
+    for line in agent_log.splitlines():
+        if line.startswith("[agent]"):
+            print(line, file=sys.stderr)
     result_file = jobs_dir / "result.json"
     result = (json.loads(result_file.read_text())
               if result_file.exists() else {})

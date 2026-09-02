@@ -208,7 +208,7 @@ def test_nlm_agent_cmd_passes_key_by_name_only(test_db, monkeypatch, tmp_path):
     joined = " ".join(cmd)
     assert "sekret" not in joined          # secret travels via env, not argv
     assert "-e GEMINI_API_KEY" in joined
-    assert "notebooklm-data:/data:ro" in joined
+    assert "notebooklm-data:/data" in joined      # rw: agent owns the profile
     assert cmd[-2:] == ["--job", "/out/job.json"]
 
 

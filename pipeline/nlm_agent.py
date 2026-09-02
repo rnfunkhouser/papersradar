@@ -36,11 +36,17 @@ from pathlib import Path
 API_BASE = os.environ.get("GEMINI_API_BASE",
                           "https://generativelanguage.googleapis.com")
 MODEL = os.environ.get("NLM_CU_MODEL", "gemini-3.7-flash")
+# The LIVE Google session is the persistent Chrome profile the notebooklm-mcp
+# worker created at login (Google rotates cookies, so the state.json snapshot
+# goes stale within hours — measured 2026-09-02). The agent launches from the
+# profile directly (volume mounted rw) and is its primary user; the worker
+# stays only as the noVNC re-auth tool.
+PROFILE_DIR = os.environ.get("PROFILE_DIR", "/data/chrome_profile")
 STATE_JSON = os.environ.get("STATE_JSON", "/data/browser_state/state.json")
 VIEWPORT = {"width": 1440, "height": 900}
 PACE_SEC = float(os.environ.get("NLM_CU_PACE_SEC", "6"))
 SETTLE_MS = 900                 # let the UI settle after each action
-NAV_HOSTS = ("notebooklm.google.com", "notebooklm.google",
+NAV_HOSTS = ("notebooklm.google.com", "notebook.google.com",
              "gemini.google.com", "accounts.google.com")
 
 TOOLS = [
@@ -234,6 +240,7 @@ def screenshot_b64(page) -> str:
 def run_phase(page, ex: Executor, goal: str, max_steps: int = 25,
               provided_text: str = "") -> int:
     """One bounded agent conversation pursuing `goal`. Returns steps used."""
+    print(f"[agent] phase: {goal[:70]}...", file=sys.stderr, flush=True)
     ex.provided_text = provided_text
     prev_id = None
     payload_input = goal
@@ -245,7 +252,12 @@ def run_phase(page, ex: Executor, goal: str, max_steps: int = 25,
         prev_id = resp.get("id") or prev_id
         calls = extract_calls(resp)
         if not calls:
+            print(f"[agent] phase done in {step} steps", file=sys.stderr,
+                  flush=True)
             return step                 # model finished the goal
+        print(f"[agent] step {step + 1}: "
+              + ", ".join(c.get("name", "?") for c in calls),
+              file=sys.stderr, flush=True)
         results = []
         for call in calls:
             args = call.get("arguments") or {}
@@ -282,6 +294,32 @@ def run_phase(page, ex: Executor, goal: str, max_steps: int = 25,
 
 # --- the episode flow ---------------------------------------------------------
 
+def _cookie_db() -> Path:
+    """The worker profile's cookie database (location moved across Chrome
+    versions)."""
+    for rel in ("Default/Network/Cookies", "Default/Cookies"):
+        p = Path(PROFILE_DIR) / rel
+        if p.exists():
+            return p
+    raise AgentError(f"no cookie DB under {PROFILE_DIR} — run the worker's "
+                     "setup-auth first (runbook §NLM)", kind="auth")
+
+
+def _sync_cookies_back(mini: Path) -> None:
+    """Copy the transplant profile's (possibly rotated) cookie DB back over
+    the canonical one, best-effort."""
+    import shutil
+    for rel in ("Default/Network/Cookies", "Default/Cookies"):
+        src = mini / rel
+        if src.exists():
+            try:
+                shutil.copy2(src, _cookie_db())
+            except Exception as e:
+                print(f"[agent] cookie sync-back skipped: {e}",
+                      file=sys.stderr)
+            return
+
+
 def run_episode(job: dict) -> dict:
     from playwright.sync_api import sync_playwright
     out_dir = Path(job["out_dir"])
@@ -289,106 +327,149 @@ def run_episode(job: dict) -> dict:
     downloads: list = []
     upload_queue = list(job.get("pdfs", []))
     with sync_playwright() as pw:
-        browser = pw.chromium.launch(
-            headless=True,
-            args=["--disable-blink-features=AutomationControlled"])
-        tmp = browser.new_page()
-        ua = tmp.evaluate("navigator.userAgent").replace("HeadlessChrome",
-                                                         "Chrome")
-        tmp.close()
-        context = browser.new_context(
-            storage_state=STATE_JSON, viewport=VIEWPORT, locale="en-US",
-            user_agent=ua)
-        page = context.new_page()
+        # Headful on Xvfb (Google bounces headless fingerprints to the login
+        # wall even with a valid session — measured 2026-09-01), launched
+        # from the persistent profile with the same flags the worker uses,
+        # so we present as the same browser Google already trusts.
+        # Minimal transplant profile: a fresh dir seeded with ONLY the
+        # worker profile's cookie DB. Playwright's persistent attach crashes
+        # on the worker's full patchright profile (measured 2026-09-02),
+        # while fresh+Cookies launches clean AND carries the login. On
+        # success the (possibly rotated) cookie DB is copied back so the
+        # canonical jar stays fresh.
+        import shutil
+        mini = Path("/tmp/mini-profile")
+        shutil.rmtree(mini, ignore_errors=True)
+        canonical = _cookie_db()
+        (mini / "Default").mkdir(parents=True)
+        shutil.copy2(canonical, mini / "Default" / "Cookies")
+        context = pw.chromium.launch_persistent_context(
+            str(mini), headless=False, viewport=VIEWPORT, locale="en-US",
+            args=["--no-sandbox", "--disable-gpu", "--disable-dev-shm-usage"])
+        page = context.pages[0] if context.pages else context.new_page()
         page.on("filechooser",
                 lambda fc: fc.set_files(upload_queue.pop(0))
                 if upload_queue else None)
         page.on("download", lambda d: downloads.append(d))
 
-        page.goto("https://notebooklm.google.com/", timeout=60_000)
-        page.wait_for_timeout(4000)
-        if "accounts.google.com" in page.url:
-            raise AgentError("Google session expired — re-login via noVNC "
-                             "(runbook §NLM)", kind="auth")
-        ex = Executor(page)
-
-        steps_total += run_phase(page, ex, (
-            "You are on Gemini Notebook (formerly NotebookLM). Create a "
-            "brand-new empty notebook (look for a 'Create notebook' or "
-            "'New notebook' or '+' button; dismiss any welcome or "
-            "informational dialogs that block it). You are done when a new "
-            "notebook is open showing its add-sources view."))
-
-        n = len(job.get("pdfs", []))
-        if n:
-            steps_total += run_phase(page, ex, (
-                f"This notebook needs {n} PDF file(s) added as sources, one "
-                "at a time. For each: open the add-source dialog if not "
-                "already open, choose the 'Upload files' option and click "
-                "it — a file is provided automatically by the environment "
-                "when the file picker opens (you will not see an OS dialog). "
-                "Wait until the source appears in the sources list before "
-                "adding the next. You are done when the sources list shows "
-                f"{n} file source(s)."), max_steps=15 + 12 * n)
-
-        if job.get("notes_text"):
-            steps_total += run_phase(page, ex, (
-                "Add one more source using the 'Copied text' (paste text) "
-                "option: open the add-source dialog, choose copied text, "
-                "click into the text field, then call insert_provided_text "
-                "to insert the prepared content (do NOT type it yourself), "
-                f"set the title to {job.get('notes_title', 'Briefing notes')!r} "
-                "if a title field exists, and confirm/insert. Done when the "
-                "source appears in the sources list."),
-                provided_text=job["notes_text"])
-
-        steps_total += run_phase(page, ex, (
-            "Now set up the Audio Overview: open the Studio (or Audio "
-            "Overview) area, find the option to customize the Audio "
-            "Overview before generating (often an edit/customize control), "
-            "click into the customization instructions text field, call "
-            "insert_provided_text to insert the prepared instructions (do "
-            "NOT type them yourself), then start generation (Generate "
-            "button). Done once generation has visibly started."),
-            provided_text=job["steering_prompt"], max_steps=30)
-
-        deadline = time.monotonic() + int(
-            os.environ.get("NLM_GENERATE_TIMEOUT_SEC", "1800"))
-        while True:
-            ex.status_reported = None
-            steps_total += run_phase(page, ex, (
-                "Look at the current notebook. Is the generated Audio "
-                "Overview finished and ready (a play button and/or download "
-                "option for it is available, no progress indicator)? Call "
-                "report_status with ready=true or ready=false. Do not click "
-                "anything else."), max_steps=4)
-            if ex.status_reported:
-                break
-            if time.monotonic() > deadline:
-                raise AgentError("audio generation timed out", kind="timeout")
-            time.sleep(45)
-
-        steps_total += run_phase(page, ex, (
-            "Download the generated Audio Overview: find its more-options "
-            "(three dots) menu or download control and click Download. Done "
-            "once the download has started."), max_steps=15)
-        for _ in range(60):
-            if downloads:
-                break
-            page.wait_for_timeout(1000)
-        if not downloads:
-            raise AgentError("no download captured", kind="download")
-        d = downloads[0]
-        suffix = Path(d.suggested_filename or "episode.wav").suffix or ".wav"
-        audio_path = out_dir / f"episode{suffix}"
-        d.save_as(str(audio_path))
-        context.close()
-        browser.close()
+        # From here on, Google may ROTATE session cookies at any point; the
+        # rotated jar in the transplant profile is then the only valid one.
+        # The finally block syncs it back no matter how this run ends —
+        # only syncing on success is how the session got burned on
+        # 2026-09-02 (a failed run discarded the rotated cookies).
+        try:
+            audio_path = _drive_episode(page, job, out_dir, upload_queue,
+                                        downloads)
+        finally:
+            try:
+                context.close()      # flush the cookie DB, then copy back
+            except Exception:
+                pass
+            _sync_cookies_back(mini)
     if not audio_path.exists() or audio_path.stat().st_size < 50_000:
         raise AgentError("downloaded audio missing or implausibly small",
                          kind="download")
     return {"ok": True, "audio_path": str(audio_path),
-            "steps_used": steps_total}
+            "steps_used": _drive_episode.steps_used}
+
+
+def _drive_episode(page, job, out_dir: Path, upload_queue, downloads) -> Path:
+    """The phased UI flow; returns the downloaded audio path."""
+    steps_total = 0
+    page.goto("https://notebooklm.google.com/", timeout=60_000)
+    # Google may bounce THROUGH accounts.google.com and land back when
+    # cookies are good — judge auth only after the redirects settle.
+    for _ in range(10):
+        page.wait_for_timeout(3000)
+        if "accounts.google.com" not in page.url:
+            break
+    if "accounts.google.com" in page.url:
+        try:                                    # leave evidence behind
+            (out_dir / "auth_fail_url.txt").write_text(page.url)
+            page.screenshot(path=str(out_dir / "auth_fail.png"))
+        except Exception:
+            pass
+        raise AgentError("Google session expired — re-login via noVNC "
+                         "(runbook §NLM)", kind="auth")
+    ex = Executor(page)
+
+    steps_total += run_phase(page, ex, (
+        "You are on Gemini Notebook (formerly NotebookLM). Create a "
+        "brand-new empty notebook (look for a 'Create notebook' or "
+        "'New notebook' or '+' button; dismiss any welcome or "
+        "informational dialogs that block it). You are done when a new "
+        "notebook is open showing its add-sources view."))
+
+    n = len(job.get("pdfs", []))
+    if n:
+        steps_total += run_phase(page, ex, (
+            f"This notebook needs {n} PDF file(s) added as sources, one "
+            "at a time. For each: open the add-source dialog if not "
+            "already open, choose the 'Upload files' option and click "
+            "it — a file is provided automatically by the environment "
+            "when the file picker opens (you will not see an OS dialog). "
+            "Wait until the source appears in the sources list before "
+            "adding the next. You are done when the sources list shows "
+            f"{n} file source(s)."), max_steps=15 + 12 * n)
+
+    if job.get("notes_text"):
+        steps_total += run_phase(page, ex, (
+            "Add one more source using the 'Copied text' (paste text) "
+            "option: open the add-source dialog, choose copied text, "
+            "click into the text field, then call insert_provided_text "
+            "to insert the prepared content (do NOT type it yourself), "
+            f"set the title to {job.get('notes_title', 'Briefing notes')!r} "
+            "if a title field exists, and confirm/insert. Done when the "
+            "source appears in the sources list."),
+            provided_text=job["notes_text"])
+
+    steps_total += run_phase(page, ex, (
+        "Now set up the Audio Overview: open the Studio (or Audio "
+        "Overview) area, find the option to customize the Audio "
+        "Overview before generating (often an edit/customize control), "
+        "click into the customization instructions text field, call "
+        "insert_provided_text to insert the prepared instructions (do "
+        "NOT type them yourself), then start generation (Generate "
+        "button). Done once generation has visibly started."),
+        provided_text=job["steering_prompt"], max_steps=30)
+
+    deadline = time.monotonic() + int(
+        os.environ.get("NLM_GENERATE_TIMEOUT_SEC", "1800"))
+    while True:
+        ex.status_reported = None
+        steps_total += run_phase(page, ex, (
+            "Look at the current notebook. Is the generated Audio "
+            "Overview finished and ready (a play button and/or download "
+            "option for it is available, no progress indicator)? Call "
+            "report_status with ready=true or ready=false. Do not click "
+            "anything else."), max_steps=4)
+        if ex.status_reported:
+            break
+        if time.monotonic() > deadline:
+            raise AgentError("audio generation timed out", kind="timeout")
+        time.sleep(45)
+
+    steps_total += run_phase(page, ex, (
+        "Download the generated Audio Overview. It appears in the "
+        "Studio panel as a card or audio player. Actively work the UI — "
+        "do NOT use the wait action in this phase: click the Audio "
+        "Overview card/player to reveal its controls; open its "
+        "three-dot 'More' options menu and choose Download; or click a "
+        "download (down-arrow) icon near the player if one is visible. "
+        "Scroll the Studio panel if the card is out of view. Done once "
+        "a download has started."), max_steps=25)
+    for _ in range(60):
+        if downloads:
+            break
+        page.wait_for_timeout(1000)
+    if not downloads:
+        raise AgentError("no download captured", kind="download")
+    d = downloads[0]
+    suffix = Path(d.suggested_filename or "episode.wav").suffix or ".wav"
+    audio_path = out_dir / f"episode{suffix}"
+    d.save_as(str(audio_path))
+    _drive_episode.steps_used = steps_total
+    return audio_path
 
 
 def main():
