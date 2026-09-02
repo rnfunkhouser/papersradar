@@ -200,3 +200,14 @@ UI and no upstream fix exists yet (issues checked 2026-08-31). nlm engine
 left enabled — fails gracefully into the email footer, retries daily; watch
 upstream for a Gemini Notebook selector update. Anchor is the working engine;
 first real episode expected 2026-09-01 4:00am PT.
+
+## 2026-09-02 — nlm engine LIVE: vision agent completed a full episode
+The Gemini computer-use agent (NLM_MODE=agent, gemini-3.5-flash-lite)
+completed the entire flow live in 56 steps: create notebook, upload 2 PDFs,
+add abstract-notes source, insert steering prompt, generate Audio Overview,
+poll ready, download — m4a transcoded to a 21:54 MP3. Feed now carries both
+trial episodes for Sep 1: [Anchor] 9:41 and [NLM] 21:54. Session-burn bug
+fixed (cookie sync-back in finally); one noVNC re-login was needed after the
+earlier burn. Trial week runs automatically from the 3:00am pipeline; the
+[NLM] runtime (~22 min vs the 8-12 min spec) is steered by the customization
+prompt only softly — a tuning candidate if the owner finds it long.
