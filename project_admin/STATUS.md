@@ -239,3 +239,29 @@ next 3:00am run. Watch: gather counts, embed quota, bank depth
   fit_rule (the imported calibrated rubric was one save away from clobber).
 - Dashboard card: vote-explainer line removed (judge summary + collapsible
   abstract were already on the card). 152 tests passing.
+
+## 2026-09-04 — generated summaries live end-to-end; resume notes
+- **Summaries feature complete**: `summaries` pipeline stage (briefings ->
+  fulltext -> summaries -> podcast; retry timer covers it) writes a prose
+  summary per briefed paper — 120-180w grounded in OA full text, 60-100w
+  cautious abstract-based otherwise — into paper_summaries (paper-level,
+  shared). Dashboard card shows it with a grounded/abstract provenance tag
+  above the collapsible Abstract; the EMAIL excerpt now leads with the same
+  summary so "Full summary on your dashboard" continues seamlessly.
+- **Leak fix**: provider router's reasoning_content fallback published
+  chain-of-thought as summaries; clean_summary() strips preambles, detects
+  reasoning markers, salvages quoted drafts, 30-word floor, 2 retries,
+  skip-not-fatal. 24 tainted rows purged; regen of 14 briefing days at
+  ~112 summaries / 0 leak signatures as of close (last dates finishing;
+  retry timer mops up any stragglers). 160 tests passing.
+- **Where everything stands**: anchor + NLM podcast engines LIVE (trial week
+  running; NLM = vision agent, ~22-min episodes — length tuning is a known
+  candidate); gather buffer 14d/2400-cap building high-fit reserve; English
+  screen at ingest; owner web access fixed (single gmail account, structured
+  fields backfilled prompt-identically, custom fit_rule protected).
+- **NEXT session candidates**: (1) phase-2 BYO-Gemini-key multi-user anchor
+  (fully specified in docs/PODCAST_DESIGN.md "Phase 2" — owner-approved,
+  ~1 day); (2) trial-week verdict -> set PODCAST_ENGINES to the winner;
+  (3) NLM episode length steering if 22min feels long; (4) consider
+  summaries in the briefing email for non-podcast users (their email sends
+  before the summaries stage; would need a stage reorder or deferred send).
