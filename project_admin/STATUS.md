@@ -224,3 +224,18 @@ papers now bank and re-compete across troughs. Owner declined the extra
 quality-floor knob. Catch-up gather+embed run same day; effect from the
 next 3:00am run. Watch: gather counts, embed quota, bank depth
 (SELECT COUNT(*) FROM judgments WHERE fit>=8 AND paper NOT briefed).
+
+## 2026-09-04 — language screen; owner account made web-safe; login clarity
+- Content-based English screen at ingest (app/langcheck; OSF preprints carry
+  no language metadata — a French SocArXiv paper reached a briefing) + one-
+  shot corpus scrub (2 user-touched non-English papers deliberately kept).
+- Owner web-access fixed: the "bounced to setup" report was a wrong-account
+  sign-in (login silently creates accounts for unknown emails). Fixes:
+  login page/email now say unknown addresses start a fresh account; the two
+  stray empty accounts deleted; owner's structured settings fields
+  backfilled from the imported profile with a PROVEN byte-identical judge
+  prompt (tools/backfill_structured_fields.py), profile normalized under
+  the same version (no re-judge). Settings saves now PRESERVE any custom
+  fit_rule (the imported calibrated rubric was one save away from clobber).
+- Dashboard card: vote-explainer line removed (judge summary + collapsible
+  abstract were already on the card). 152 tests passing.
