@@ -322,10 +322,34 @@ def _scrub_html_entities(con: sqlite3.Connection) -> None:
                     (clean_text(r["title"]), r["user_id"], r["paper_id"]))
 
 
+def _scrub_non_english(con: sqlite3.Connection) -> None:
+    """One-time fix-up (2026-09): OSF preprints carry no language metadata,
+    so non-English papers entered the corpus (gather.keep now screens by
+    content — app/langcheck). Removes clearly non-English papers plus their
+    embeddings and judgments, EXCEPT any a user has already seen or touched
+    (briefed, voted, clicked) — those stay as history. Conservative check:
+    ambiguous text is kept."""
+    from app.langcheck import looks_english
+    doomed = [
+        r["id"] for r in con.execute(
+            "SELECT id, title, abstract FROM papers WHERE id NOT IN "
+            "(SELECT paper_id FROM briefing_items) AND id NOT IN "
+            "(SELECT paper_id FROM feedback) AND id NOT IN "
+            "(SELECT paper_id FROM clicks)").fetchall()
+        if not looks_english((r["title"] or "") + " " + (r["abstract"] or ""))
+    ]
+    for pid in doomed:
+        con.execute("DELETE FROM paper_embeddings WHERE paper_id=?", (pid,))
+        con.execute("DELETE FROM judgments WHERE paper_id=?", (pid,))
+        con.execute("DELETE FROM paper_fulltext WHERE paper_id=?", (pid,))
+        con.execute("DELETE FROM papers WHERE id=?", (pid,))
+
+
 # One-shot data fix-ups, tracked in data_migrations so each runs exactly once
 # per database (they are also safe to re-run by hand).
 DATA_MIGRATIONS = [
     ("scrub_html_entities_2026-08", _scrub_html_entities),
+    ("scrub_non_english_2026-09", _scrub_non_english),
 ]
 
 

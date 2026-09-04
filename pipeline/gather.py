@@ -18,6 +18,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from app.config import cfg, cfg_int
 from app import db as appdb
 from app import openalex
+from app.langcheck import looks_english
 
 OPENALEX_PER_PAGE = 200
 ARXIV_CATS = ["cs.CY", "cs.SI", "cs.CL"]
@@ -44,6 +45,10 @@ def keep(rec: dict) -> bool:
     if not t or NOISE_TITLE.search(t) or BOOK_REVIEW_RE.match(t):
         return False
     if rec.get("language") and rec["language"] != "en":
+        return False
+    # content-based check for records with NO language metadata (OSF/arXiv):
+    # a French SocArXiv preprint reached a briefing this way (2026-09-04)
+    if not looks_english(t + " " + (rec.get("abstract") or "")):
         return False
     if rec.get("type") and rec["type"] not in GOOD_TYPES:
         return False
