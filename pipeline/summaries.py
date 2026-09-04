@@ -38,8 +38,42 @@ text. Professional, factual register — no superlatives, no second person. Do
 not repeat the title."""
 
 
+import re
+
+# chatty preambles some models prepend despite instructions
+_PREAMBLE = re.compile(
+    r"^(here('|’)s\s+(is\s+)?(a\s+)?[^:\n]{0,60}summary[^:\n]{0,60}[:.]\s*"
+    r"|summary[:.]\s*)", re.I)
+# chain-of-thought markers: the provider router falls back to
+# reasoning_content when a model returns empty content (fine for the judge's
+# JSON parsing, poison for prose) — observed live 2026-09-04
+_REASONING = re.compile(
+    r"\b(we need to|let'?s (craft|draft|write|aim)|word count|aim ~?\d|"
+    r"the user wants|as an ai|i (will|should) (write|produce))\b", re.I)
+
+
+def clean_summary(text: str) -> str | None:
+    """Normalize a model reply into publishable prose, or None if it is
+    unusable (reasoning leak with no extractable draft)."""
+    text = _PREAMBLE.sub("", (text or "").strip()).strip()
+    if _REASONING.search(text[:300]):
+        # try to salvage the drafted prose: the longest double-quoted block
+        candidates = re.findall(r'["“]([^"“”]{120,})[”"]', text, re.S)
+        if not candidates:
+            return None
+        text = max(candidates, key=len).strip()
+        if _REASONING.search(text[:300]):
+            return None
+    if len(text) > 1 and text[0] in '"“' and text[-1] in '"”':
+        text = text[1:-1].strip()
+    if len(text.split()) < 30:
+        return None
+    return text
+
+
 def write_summary(con, paper) -> tuple[str, int, str]:
-    """One paper -> (summary, grounded, provider). Raises on LLM failure."""
+    """One paper -> (summary, grounded, provider). Retries replies that leak
+    the prompt or reasoning; raises on LLM failure."""
     fulltext = extract_text(con, paper["id"])
     system = SYSTEM_GROUNDED if fulltext else SYSTEM_ABSTRACT
     body = (f"Title: {paper['title']}\n"
@@ -47,9 +81,21 @@ def write_summary(con, paper) -> tuple[str, int, str]:
             f"Abstract: {paper['abstract'] or '(none)'}")
     if fulltext:
         body += f"\n\nFULL TEXT (extracted, may contain artifacts):\n{fulltext}"
-    text, served = providers.chat(system, body, temperature=0.3,
-                                  max_tokens=600)
-    return text.strip(), 1 if fulltext else 0, served
+    last = ""
+    for attempt in range(3):
+        text, served = providers.chat(system, body, temperature=0.3,
+                                      max_tokens=900)
+        cleaned = clean_summary(text)
+        if cleaned:
+            return cleaned, 1 if fulltext else 0, served
+        last = text[:120]
+        print(f"[summaries] unusable reply (attempt {attempt + 1}) for "
+              f"paper {paper['id']}: {last!r}", file=sys.stderr)
+    raise UnusableSummary(f"no usable summary after 3 attempts (last: {last!r})")
+
+
+class UnusableSummary(Exception):
+    """Model kept leaking prompt/reasoning — skip this paper, keep the batch."""
 
 
 def run(con, date: str | None = None) -> dict:
@@ -63,6 +109,11 @@ def run(con, date: str | None = None) -> dict:
     for p in papers:
         try:
             summary, grounded, served = write_summary(con, p)
+        except UnusableSummary as e:
+            print(f"[summaries] skipping paper {p['id']} ({e})",
+                  file=sys.stderr)
+            failed += 1
+            continue
         except providers.ProvidersUnavailable as e:
             print(f"[summaries] stopping early ({e}) — resumes on retry",
                   file=sys.stderr)

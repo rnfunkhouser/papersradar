@@ -36,7 +36,7 @@ def test_stage_writes_and_is_idempotent(test_db, owner, monkeypatch):
 
     def fake_chat(system, user, **kw):
         calls.append(system)
-        return "A generated summary of the paper.", "stub"
+        return "A generated summary of the paper that examines methods and outcomes across several studies with enough substance to clear the minimum publishable length used by the cleaning validator in effect today, comfortably.", "stub"
     monkeypatch.setattr(providers, "chat", fake_chat)
     _brief(test_db, owner["id"], "2026-09-04", "s1", "Paper One")
     out = summaries.run(test_db, "2026-09-04")
@@ -54,7 +54,7 @@ def test_grounded_prompt_when_fulltext_exists(test_db, owner, monkeypatch,
     from app.config import db_path
     calls = []
     monkeypatch.setattr(providers, "chat", lambda s, u, **kw:
-                        (calls.append((s, u)) or ("Grounded summary.", "stub")))
+                        (calls.append((s, u)) or ("Grounded summary of the paper covering the research question, the design and data, the key findings with numbers, and where the work lands in its broader literature for expert readers everywhere.", "stub")))
     pid = _brief(test_db, owner["id"], "2026-09-04", "s2", "Paper Two")
     ft = db_path().parent / "fulltext" / "2026-09-04"
     ft.mkdir(parents=True, exist_ok=True)
@@ -110,3 +110,48 @@ def test_email_excerpt_prefers_generated_summary(test_db, owner):
     assert "THE GENERATED SUMMARY" in html_out
     assert "THE ABSTRACT TEXT" not in html_out
     assert "Full summary on your dashboard" in html_out   # truncated -> link
+
+
+def test_clean_summary_strips_preamble_and_salvages_reasoning():
+    from pipeline.summaries import clean_summary
+    words = "The paper analyzes congressional communication at scale. " * 8
+    assert clean_summary("Here's a summary of the research paper: " + words
+                         ).startswith("The paper analyzes")
+    # observed live 2026-09-04: chain-of-thought with an extractable draft
+    leak = ('We need to produce a 60-100 word summary, plain prose. '
+            'Word count: aim ~85. Let\'s draft: "' + words + '"')
+    assert clean_summary(leak).startswith("The paper analyzes")
+    # reasoning with NO extractable draft -> unusable
+    assert clean_summary("We need to produce a summary. Let's craft about "
+                         "80 words covering the question and claims and "
+                         "methods and findings in a factual register today "
+                         "with cautious phrasing and a closing clause "
+                         "noting verification needs for readers.") is None
+    assert clean_summary("Too short to publish.") is None
+
+
+def test_write_summary_retries_leaky_replies(test_db, owner, monkeypatch):
+    from pipeline import providers, summaries
+    good = "The study examines online discourse dynamics. " * 10
+    replies = iter(["We need to produce a summary. Let's craft it now with "
+                    "about 80 words covering everything.", good])
+    monkeypatch.setattr(providers, "chat",
+                        lambda s, u, **kw: (next(replies), "stub"))
+    pid = _brief(test_db, owner["id"], "2026-09-05", "s6", "Paper Six")
+    out = summaries.run(test_db, "2026-09-05")
+    assert out["written"] == 1
+    row = test_db.execute("SELECT summary FROM paper_summaries WHERE paper_id=?",
+                          (pid,)).fetchone()
+    assert row["summary"].startswith("The study examines")
+
+
+def test_persistently_leaky_paper_is_skipped_not_fatal(test_db, owner,
+                                                       monkeypatch):
+    from pipeline import providers, summaries
+    monkeypatch.setattr(providers, "chat", lambda s, u, **kw:
+                        ("We need to produce a summary. Let's craft one.",
+                         "stub"))
+    _brief(test_db, owner["id"], "2026-09-06", "s7", "Paper Seven")
+    good = "A fine generated summary of the second paper. " * 8
+    out = summaries.run(test_db, "2026-09-06")
+    assert out["written"] == 0 and out["pending"] == 1
