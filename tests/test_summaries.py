@@ -98,3 +98,15 @@ def test_dashboard_card_shows_summary(client, test_db, owner):
     assert "The full generated summary text." in r.text
     assert "full-text summary" in r.text
     assert "<details><summary>Abstract</summary>" in r.text
+
+
+def test_email_excerpt_prefers_generated_summary(test_db, owner):
+    from pipeline import briefings
+    row = {"id": 1, "title": "T", "authors_json": "[]", "venue": "V",
+           "pub_date": "2026-09-04", "fit": 8.0, "flavors_json": "[]",
+           "why": "fits", "abstract": "THE ABSTRACT TEXT should not lead.",
+           "gen_summary": "THE GENERATED SUMMARY leads the email card. " * 30}
+    html_out = briefings.render_email(owner, [row], "2026-09-04")
+    assert "THE GENERATED SUMMARY" in html_out
+    assert "THE ABSTRACT TEXT" not in html_out
+    assert "Full summary on your dashboard" in html_out   # truncated -> link

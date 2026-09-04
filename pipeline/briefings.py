@@ -44,8 +44,10 @@ def select_items(con, user) -> list:
     max_items = user["briefing_size"] or cfg_int("BRIEFING_MAX_ITEMS")
     return con.execute(
         "SELECT p.*, j.fit, j.flavors_json, j.why, "
+        "COALESCE(s.summary, '') AS gen_summary, "
         "COALESCE(pj.display_name, '') AS pj_name FROM judgments j "
         "JOIN papers p ON p.id = j.paper_id "
+        "LEFT JOIN paper_summaries s ON s.paper_id = j.paper_id "
         "LEFT JOIN priority_journals pj ON pj.user_id = j.user_id "
         "     AND pj.source_id = p.source_id AND p.source_id != '' "
         "WHERE j.user_id=? AND j.profile_version=? AND j.fit >= ? "
@@ -143,9 +145,16 @@ def render_email(user, rows, date: str) -> str:
         if pj_name:
             pj_line = (f'<div style="color:#3730a3;font-size:12px;margin:4px 0">'
                        f'from <i>{html.escape(pj_name)}</i> — your priority list</div>')
-        excerpt = email_excerpt(r["abstract"] or "")
+        # excerpt the GENERATED summary when one exists (it continues
+        # seamlessly on the dashboard card); abstract excerpt is the fallback
+        # for rows briefed/emailed before the summaries stage ran
+        try:
+            body = r["gen_summary"] or r["abstract"] or ""
+        except (KeyError, IndexError):
+            body = r["abstract"] or ""
+        excerpt = email_excerpt(body)
         more = ""
-        if excerpt != (r["abstract"] or "").strip():
+        if excerpt != body.strip():
             more = (f' <a href="{base}/more/{r["id"]}" style="color:#1a56db">'
                     f'Full summary on your dashboard &rarr;</a>')
         cards.append(f"""

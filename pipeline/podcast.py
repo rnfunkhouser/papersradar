@@ -44,8 +44,10 @@ def briefed_rows(con, user, date: str):
     pj_name). Judge fields come from the latest judgment for the pair."""
     return con.execute(
         "SELECT p.*, b.fit, j.flavors_json, j.why, "
+        "COALESCE(s.summary, '') AS gen_summary, "
         "COALESCE(pj.display_name, '') AS pj_name "
         "FROM briefing_items b JOIN papers p ON p.id = b.paper_id "
+        "LEFT JOIN paper_summaries s ON s.paper_id = b.paper_id "
         "LEFT JOIN judgments j ON j.user_id = b.user_id AND j.paper_id = b.paper_id "
         "     AND j.judged_at = (SELECT MAX(j2.judged_at) FROM judgments j2 "
         "         WHERE j2.user_id = b.user_id AND j2.paper_id = b.paper_id) "
