@@ -16,6 +16,7 @@ Stages (sequential, 1 GB RAM budget — nothing runs in parallel):
   briefings        per user due today: briefing_items + email digest (podcast
                    users' emails are deferred to the podcast stage)
   fulltext         OA full text for papers briefed to podcast users
+  summaries        generated prose summary per briefed paper (dashboard card)
   podcast          episodes (anchor/nlm engines) + deferred emails w/ status
 """
 from __future__ import annotations
@@ -168,13 +169,18 @@ def stage_fulltext(con, date=None):
     return fetch_fulltext.run(con, date)
 
 
+def stage_summaries(con, date=None):
+    from pipeline import summaries
+    return summaries.run(con, date)
+
+
 def stage_podcast(con, date=None):
     from pipeline import podcast
     return podcast.run(con, date)
 
 
 STAGES = ["profiles", "gather", "embed", "shortlist-judge", "briefings",
-          "fulltext", "podcast"]
+          "fulltext", "summaries", "podcast"]
 
 
 def main():
@@ -196,6 +202,7 @@ def main():
             "shortlist-judge": lambda: stage_shortlist_judge(con),
             "briefings": lambda: stage_briefings(con, a.date),
             "fulltext": lambda: stage_fulltext(con, a.date),
+            "summaries": lambda: stage_summaries(con, a.date),
             "podcast": lambda: stage_podcast(con, a.date),
         }[stage]
         ok = _staged(con, stage, fn) and ok

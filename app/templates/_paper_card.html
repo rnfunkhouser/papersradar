@@ -17,6 +17,13 @@
     <a href="/about-scores">{{ '%g' % c.fit }}/10{% if c.flavors %} · {{ c.flavors|join(', ') }}{% endif %}</a>
   </span>
   {% if c.why %}<div class="why">&ldquo;{{ c.why }}&rdquo;</div>{% endif %}
+  {% if c.summary %}
+  <div class="gen-summary">{{ c.summary }}
+    <span class="meta" title="{{ 'Written from the fetched open-access full text.'
+      if c.summary_grounded else 'Written from the abstract only — the full paper was not available.' }}">
+      · {{ 'full-text summary' if c.summary_grounded else 'abstract-based summary' }}</span>
+  </div>
+  {% endif %}
   {% if c.abstract %}
     <details><summary>Abstract</summary>
       <div class="abstract">{{ c.abstract }}</div>

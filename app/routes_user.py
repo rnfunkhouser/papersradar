@@ -475,11 +475,14 @@ def _briefing_cards(con, uid: int, date: str = "", q: str = "",
            "j.flavors_json, j.why, "
            "MAX(j.judged_at) AS _newest_judgment, "          # deterministic row pick
            "COALESCE(f.vote, '') AS vote, "
+           "COALESCE(s.summary, '') AS gen_summary, "
+           "COALESCE(s.grounded, 0) AS summary_grounded, "
            "COALESCE(pj.display_name, '') AS pj_name "
            "FROM briefing_items b "
            "JOIN papers p ON p.id = b.paper_id "
            "LEFT JOIN judgments j ON j.paper_id = b.paper_id AND j.user_id = b.user_id "
            "LEFT JOIN feedback f ON f.paper_id = b.paper_id AND f.user_id = b.user_id "
+           "LEFT JOIN paper_summaries s ON s.paper_id = b.paper_id "
            "LEFT JOIN priority_journals pj ON pj.user_id = b.user_id "
            "     AND pj.source_id = p.source_id AND p.source_id != '' "
            "WHERE b.user_id=?")
@@ -504,6 +507,8 @@ def _briefing_cards(con, uid: int, date: str = "", q: str = "",
             "flavors": [f.replace("_", " ")
                         for f in json.loads(r["flavors_json"] or "[]")],
             "why": r["why"] or "", "abstract": r["abstract"] or "",
+            "summary": r["gen_summary"] or "",
+            "summary_grounded": bool(r["summary_grounded"]),
             "vote": r["vote"],
             "priority_journal": r["pj_name"] or "",
         })

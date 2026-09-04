@@ -207,6 +207,16 @@ CREATE TABLE IF NOT EXISTS paper_fulltext (
     bytes       INTEGER DEFAULT 0,
     fetched_at  TEXT NOT NULL
 );
+-- Generated prose summary per briefed paper (the email's "full summary on
+-- your dashboard" promise). Paper-level and neutral, so it is shared across
+-- users; grounded=1 when written from fetched full text, 0 from abstract.
+CREATE TABLE IF NOT EXISTS paper_summaries (
+    paper_id    INTEGER PRIMARY KEY REFERENCES papers(id),
+    summary     TEXT NOT NULL,
+    grounded    INTEGER DEFAULT 0,
+    provider    TEXT DEFAULT '',
+    created_at  TEXT NOT NULL
+);
 -- Daily podcast episodes (owner-only feature for now; users.podcast_enabled
 -- gates it). One row per (user, date, engine) — the trial runs two engines.
 CREATE TABLE IF NOT EXISTS podcast_episodes (
