@@ -51,7 +51,9 @@ def _compose_profile_and_finish(con, user):
     profile directly; a legacy user with only a paragraph still gets the
     fallback profile. Enrichment (concepts, embeddings, LLM flavor drafting
     for fallback profiles) happens in the background / nightly stage."""
-    from pipeline.build_profile import structured_profile, bump_version
+    from pipeline.build_profile import (CORE_FIT_SENTENCE, DEFAULT_FIT_RULE,
+                                        bump_version, fallback_profile,
+                                        structured_profile)
     prof = structured_profile(user["interest_statement"] or "",
                               _user_flavors(user), _user_negatives(user))
     existing = db.get_profile(con, user["id"])
@@ -61,8 +63,15 @@ def _compose_profile_and_finish(con, user):
         changed = any(existing.get(k) != prof[k]
                       for k in ("core_statement", "flavors", "negatives"))
         if changed:
-            existing.update({k: prof[k] for k in
-                             ("core_statement", "flavors", "fit_rule", "negatives")})
+            # a fit_rule customized out-of-band (e.g. the owner's imported,
+            # calibrated rubric) survives structured edits; only rules
+            # matching a composed default stay in sync with the core flags
+            defaults = {DEFAULT_FIT_RULE, DEFAULT_FIT_RULE + CORE_FIT_SENTENCE,
+                        fallback_profile("", "")["fit_rule"]}
+            keys = ("core_statement", "flavors", "negatives")
+            if existing.get("fit_rule") in defaults:
+                keys += ("fit_rule",)
+            existing.update({k: prof[k] for k in keys})
             db.save_profile(con, user["id"], existing, bump_version())
     con.execute("UPDATE users SET onboarded_at=COALESCE(onboarded_at, ?) WHERE id=?",
                 (db.now(), user["id"]))

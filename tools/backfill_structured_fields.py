@@ -65,8 +65,10 @@ def main():
     # simulate exactly what a settings save writes (routes_user.
     # _compose_profile_and_finish): only these keys change, rest preserved
     candidate = {k: v for k, v in prof.items() if k != "version"}
+    # fit_rule deliberately NOT recomposed: a custom rule survives settings
+    # saves too (routes_user preserves any non-default fit_rule)
     candidate.update({k: composed[k] for k in
-                      ("core_statement", "flavors", "fit_rule", "negatives")})
+                      ("core_statement", "flavors", "negatives")})
 
     prompt_before = judging.build_prompt(prof, [], [],
                                          western_focus=bool(user["western_context"]))

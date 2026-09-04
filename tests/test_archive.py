@@ -71,7 +71,7 @@ def test_archive_lists_days_and_day_view_shows_only_own_items(client, test_db):
     assert "Bridging divides paper" not in r.text          # other day
     assert "Someone else" not in r.text                    # other user
     # cards keep the vote buttons (votes on archived papers feed the judge)
-    assert 'class="vote up' in r.text and "boundary examples" in r.text
+    assert 'class="vote up' in r.text and 'class="vote down' in r.text
     # a foreign date is not selectable
     r = client.get("/archive?date=2099-01-01")
     assert "All briefing days" not in r.text
