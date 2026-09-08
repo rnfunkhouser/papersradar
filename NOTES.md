@@ -1,4 +1,18 @@
-# STATUS
+# papersradar (Research Radar)
+
+## Current status
+Live at papersradar.com on the Oracle Cloud VM. Last logged work 2026-09-04: generated paper summaries live end-to-end (see that entry's resume notes at the bottom). Repo first pushed to a private GitHub repo 2026-09-08; before that it existed only on this Mac.
+
+## Manuscript location
+Not applicable. Operational web service; no manuscript.
+
+## Open items
+See the "NEXT" entries in the Session log below; consolidate them here as they are triaged.
+
+## Session log
+*Entries below run oldest to newest (inherited from STATUS.md); new entries via /wrapup go at the top of this section, most recent first. This file was project_admin/STATUS.md until 2026-09-08.*
+
+- 2026-09-08: Created private GitHub repo `rnfunkhouser/papersradar` and pushed all 51 commits. Adopted project conventions (renamed STATUS.md to NOTES.md, added outputs/, repo-local /start and /wrapup, root CLAUDE.md, gitignore patterns). No code changes, no deploy.
 
 ## 2026-08-07 — initial build complete, not yet deployed
 

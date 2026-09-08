@@ -20,3 +20,8 @@ venv/
 # local scratch
 *.log
 .DS_Store
+
+# project conventions (added 2026-09-08)
+node_modules/
+data/raw/
+.claude/settings.local.json
