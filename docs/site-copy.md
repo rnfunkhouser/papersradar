@@ -30,14 +30,14 @@
 [STRUCTURE] Site footer: single line of small text with dot-separated links. Ends with a coffee-cup emoji ☕.
 
 **Footer:**
-> Research Radar · a free tool built and run by a political-communication researcher at the University of Idaho · about · how the scores work · privacy · source code · useful to you? buy me a coffee ☕
+> Research Radar · a free, open-source tool built and run by a researcher at the University of Idaho · about · how the scores work · privacy · source code · useful to you? buy me a coffee ☕
 
 (The "source code" link only shows when a public source URL is configured. "buy me a coffee ☕" links to Ko-fi.)
 
 **Browser-tab titles (per page):** "Research Radar — your daily research radar" (landing), "Sign in — Research Radar", "Check your email — Research Radar", "Set up your radar — Research Radar", "Dashboard — Research Radar", "Archive — Research Radar", "Settings — Research Radar", "About — Research Radar", "How the scores work — Research Radar", "Privacy & your data — Research Radar", "Unsubscribed — Research Radar", "Account deleted — Research Radar", "Admin — Research Radar".
 
 **Search-engine description (meta tag):**
-> Your daily research radar — new papers that actually fit your interests, with a transparent AI rationale for every pick.
+> Your daily research radar — find the new papers that actually fit your exact research interests.
 
 ---
 
@@ -51,7 +51,7 @@
 > Want to see a full example?
 
 **Attribution line:**
-> This is the founder's own profile — a political-communication researcher. Yours can be shorter; specificity matters more than length.
+> This is the profile of Dr. Ryan Funkhouser who created this tool. Yours can be shorter; specificity matters more than length.
 
 **Example content — research statement:**
 > I am a political-communication researcher. I study how communication — increasingly AI-mediated — persuades, changes behavior, and bridges or deepens ideological divides, especially online. My interests come in a few specific flavors (below); the best papers for me sit squarely inside one flavor or connect several. Papers about just 'AI' in general, or 'politics' in general, are background noise. AI matters to me as a COMMUNICATOR or INTERVENTION (a chatbot that persuades, an LLM that delivers arguments), not as an object of public opinion or a research tool.
@@ -88,7 +88,7 @@
 > Get suggestions on my draft
 
 **Hint beside button:**
-> An AI coach reads your draft and your seed papers, then suggests sharpenings — nothing changes unless you edit it yourself.
+> An AI tool reads your draft and seed papers then suggests improvements (nothing changes unless you edit it yourself).
 
 **Button label while loading:**
 > Thinking…
@@ -103,13 +103,13 @@
 > Something went wrong.
 
 **Network failure note:**
-> Could not reach the coach — try again shortly.
+> Could not reach the tool — try again shortly.
 
 **Rate-limit message (shared by all coach features):**
-> The AI coach is rate-limited to a few calls per day — please try again tomorrow.
+> The AI tool is rate-limited to a few calls per day — please try again tomorrow.
 
 **Provider-down message (shared):**
-> The AI coach couldn't reach a language-model provider just now — please try again in a few minutes.
+> The AI tool couldn't reach a language-model provider just now — please try again in a few minutes.
 
 **Malformed-response messages:** suggestions: "The suggestions came back malformed — please try once more." / draft: "The draft came back malformed — please try once more." / audit: "The audit came back malformed — please try once more."
 
@@ -231,7 +231,7 @@
 [STRUCTURE] Hero section: small uppercase "eyebrow" tag line, big two-line H1 with the phrase "research radar" in gradient color, subline paragraph, then two large buttons side by side (filled primary + ghost), then a small reassurance line.
 
 **Eyebrow:**
-> A fully free, open-source tool for researchers
+> A free, open-source tool for researchers
 
 (Without a configured source-code URL this reads "A fully free tool for researchers".)
 

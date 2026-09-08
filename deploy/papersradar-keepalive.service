@@ -1,0 +1,13 @@
+[Unit]
+Description=Papers Radar keepalive burn (keeps Always Free CPU above Oracle's idle-reclaim threshold)
+
+[Service]
+Type=oneshot
+User=papersradar
+Group=papersradar
+Nice=19
+# 15 min busy loop at lowest priority; yields instantly to the web app and
+# pipeline. timeout exits 124 on the expected expiry.
+ExecStart=/usr/bin/timeout 900 /bin/sh -c 'while :; do :; done'
+SuccessExitStatus=124
+MemoryMax=32M
