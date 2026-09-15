@@ -30,7 +30,7 @@
 [STRUCTURE] Site footer: single line of small text with dot-separated links. Ends with a coffee-cup emoji ☕.
 
 **Footer:**
-> Research Radar · a free, open-source tool built and run by a researcher at the University of Idaho · about · how the scores work · privacy · source code · useful to you? buy me a coffee ☕
+> Research Radar · a free, open-source tool built and run by Dr. Ryan Funkhouser at the University of Idaho · about · how the scores work · privacy · source code · useful to you? buy me a coffee ☕
 
 (The "source code" link only shows when a public source URL is configured. "buy me a coffee ☕" links to Ko-fi.)
 
@@ -233,36 +233,19 @@
 **Eyebrow:**
 > A free, open-source tool for researchers
 
-(Without a configured source-code URL this reads "A fully free tool for researchers".)
 
 **H1:**
 > Your daily *research radar*. Never miss the paper that matters.
 
-**Hero subline:**
-> Research Radar scans the day's new publications and preprints each morning and surfaces the handful that actually fit *your* research — each with a plain-English rationale you can check.
+**Hero subline:**    
+> Research Radar scans the day's new publications and preprints each morning to find and summarize the handful that actually fit *your* research.
 
 **Primary button:** > Create an account
 **Ghost button:** > How it works
 
 **Reassurance line:**
-> Free for everyone — no tiers, no card, no catch. Built by a researcher to advance research, not to sell anything.
+> Free and open source.
 
-[STRUCTURE] Feature section: centered H2 + lead paragraph, then three boxes in a row, each with a left-justified emoji icon (🌍, 🔍, 🎯), bold title, and a 2–3 sentence description.
-
-**H2:**
-> Made for how academics actually read
-
-**Lead:**
-> Keyword alerts are imprecise, and tables of contents arrive late. This tool reads new abstracts against a description of your work that you write and can edit.
-
-**Feature 1 (🌍):**
-> **Field-agnostic coverage** — OpenAlex, arXiv, SocArXiv and PsyArXiv — journals and preprints across disciplines, gathered daily from the research areas your own seed papers live in.
-
-**Feature 2 (🔍):**
-> **Readable AI rationales** — An AI judge reads every shortlisted abstract against criteria you can read and edit, then scores fit 0–10 with a one-sentence reason. No black-box ranking — the "why" is always shown.
-
-**Feature 3 (🎯):**
-> **Corrects with your feedback** — Thumbs-up and thumbs-down on any pick become boundary examples the judge reads on the next run, so the selection tracks your actual judgment over time.
 
 [STRUCTURE] "How it works" section (anchor target of the hero ghost button): H2 + lead, then three numbered step boxes in a row, each with a bold title and short paragraph.
 
@@ -270,35 +253,18 @@
 > How it works
 
 **Lead:**
-> Two stages, both inspectable: **Gathering** casts the net, **Selection** reads what was caught.
+> Two stages: **Gathering** scans for papers that might be of interest, **Selection** uses your preferences to pick the very best ones.
 
 **Step 1:**
-> **Describe your work** — Write down your interests in your own words and add a few papers you wish you'd been alerted to. Setup takes about five minutes.
+> **Describe your work** — Describe your research interests and (optionally) link to a Zotero folder of seed papers that represent your interests. Setup takes about five minutes.
 
 **Step 2:**
 > **Daily gathering & shortlist** — Each morning the pipeline searches the research areas your seed papers point to and shortlists new work that sits closest to them by semantic similarity, not keywords.
 
 **Step 3:**
-> **An AI judge reads the shortlist** — The judge scores each shortlisted abstract against your Selection Criteria. Papers that clear your bar appear in your dashboard and, if you want, your inbox — rationale attached.
+> **An AI judge reads the shortlist** — The judge scores each shortlisted abstract against your Selection Criteria. Papers that clear your bar are linked and summarized in a daily dashboard and (optional) email.
 
-[STRUCTURE] Testimonial section: a quote card with a small intro line, the quotation, and an attribution line.
 
-**Intro line:** > From an early user:
-
-**Quote:**
-> "This is exactly what I was looking for. Instead of relying on seeing a colleague post about a relevant new pub (or on imprecise keyword alerts), this surfaces exactly the kinds of papers most relevant to my work."
-
-**Attribution:** > — early user, political communication researcher
-
-[STRUCTURE] "Free" strip: full-width tinted band, H2 + one paragraph with inline links (privacy, source code, Ko-fi with ☕).
-
-**H2:**
-> Free, because it should be
-
-**Paragraph:**
-> Research Radar is an open-source tool built and run by a researcher to advance research. There are no pricing tiers, no premium plan, and no credit card — every feature is available to everyone, and your data is never sold or shared (how your data is handled · source code). If you find it valuable and want to contribute, you can buy me a coffee ☕.
-
-(Without a source URL: "…is a tool built and run by…" and no "source code" link.)
 
 [STRUCTURE] Closing call-to-action band: boxed card with H2, one line, one large filled button.
 

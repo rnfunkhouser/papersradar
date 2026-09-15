@@ -7,10 +7,57 @@ Live at papersradar.com on the Oracle Cloud VM. Last logged work 2026-09-04: gen
 Not applicable. Operational web service; no manuscript.
 
 ## Open items
-See the "NEXT" entries in the Session log below; consolidate them here as they are triaged.
+
+### Open-sourcing to-do (queued 2026-09-15, NOT started; pick up on any machine)
+Decided 2026-09-15 after a repo audit (no secrets in any of the 52 commits, no .env/.db ever tracked,
+160 tests pass offline, site already switches to open-source wording when SOURCE_URL is set).
+Podcast/NotebookLM engine: out of scope for now, leave it alone. Do these in order:
+
+1. **License.** Goal: open source, but nobody can just take it and monetize a closed copy.
+   No OSI-approved license forbids commercial use outright; the closest open-source option is
+   **AGPL-3.0** (anyone hosting a modified copy must publish their changes, which removes the
+   incentive for a closed commercial fork). AGPL is also compatible with mutagen (GPL-2.0-or-later).
+   A true "non-commercial" license (PolyForm Noncommercial, CC BY-NC) would block monetization but
+   is not open source by definition. Default to AGPL-3.0 unless Ryan says otherwise. Add: LICENSE
+   file at root, license line in project_admin/README.md, SPDX header comment in every .py file,
+   and the license name in the /about and /privacy pages where the source link appears.
+2. **Anonymize.** Remove personal info from the tree: delete pipeline/import_owner.py (one-time
+   migration; hardcodes name, Gmail, ~/claude/new_papers_briefing path) or generalize it with no
+   defaults; replace ryan.n.funkhouser@gmail.com in pipeline/build_profile.py docstring, DEPLOY.md
+   and DESIGN.md with you@example.com; scrub the 2026-09-09 session-log entry below of server
+   specifics (Oracle ticket ref, IP, backup paths) and keep such details out of NOTES.md from now
+   on. The about-page photo/bio (app/static/ryan.jpg, about.html) stay: already public on the site.
+3. **Drop "founder" wording everywhere.** Ryan is not to be called "founder" anywhere. Rename to
+   "example profile": app/founder_example.py -> app/example_profile.py (and all symbols
+   FOUNDER_* -> EXAMPLE_*), app/templates/_founder_example.html -> _example_profile.html, the
+   attribution string ("This is the founder's own profile...") -> neutral wording such as "An
+   example profile from a political-communication researcher. Yours can be shorter...", plus
+   references in app/web.py, onboarding.html, settings.html, tests/test_onboarding.py,
+   pipeline/build_profile.py, analysis/verify_coach_live.py, DESIGN.md, docs/how-it-works.md,
+   docs/setup-evaluation.md, docs/site-copy.md, and this file. ~42 occurrences across 13 files
+   as of 2026-09-15. Tests must still pass.
+4. **Apply the new site copy.** Ryan edited docs/site-copy.md on 2026-09-15 (committed with this
+   to-do): simpler homepage, several whole sections removed. Update app/templates/landing.html
+   (and any other template the diff touches) to match the new copy exactly; remove the sections
+   he removed. Diff to see what changed: `git log -p --follow docs/site-copy.md`.
+5. **Deploy and test.** `DEPLOY_HOST=ubuntu@papersradar.com ./deploy/deploy.sh`, then verify
+   the live site: homepage renders the new copy with the removed sections gone, /about and
+   /privacy show license/source wording only once SOURCE_URL is set, onboarding example
+   expander shows the neutral attribution, no "founder" string anywhere in rendered pages
+   (`curl -s https://papersradar.com/ | grep -i founder` must be empty).
+6. **Go public (Ryan's call, after 1-5 are merged):** flip GitHub repo visibility, tag a
+   release, set SOURCE_URL in /srv/papersradar/.env, restart web service. Optional before that:
+   run /security-review on auth/admin/Zotero-key code; add CONTRIBUTING.md and SECURITY.md.
+
+Other open items: see the "NEXT" entries in the Session log below; consolidate them here as
+they are triaged.
 
 ## Session log
 *Entries below run oldest to newest (inherited from STATUS.md); new entries via /wrapup go at the top of this section, most recent first. This file was project_admin/STATUS.md until 2026-09-08.*
+
+- 2026-09-15: Audited the repo for open-sourcing and queued the to-do list above. Ryan edited docs/site-copy.md (simpler homepage); templates NOT yet updated, nothing deployed.
+
+- 2026-09-09: Oracle notice (ref f4de4d64): host under the VM is being decommissioned; reboot migration deadline 2026-09-24 17:27 UTC, Oracle auto-migrates within 24h after. Decision: let it happen automatically (boot volume, ephemeral IP 159.54.164.64, enabled units and Persistent timers all survive; worst case one degraded briefing on 09-25 if the reboot lands in the 3:00-4:30am PT run). Safety net taken: consistent SQLite backup + server .env copied to ~/papersradar-backups/ on the work Mac (papersradar-2026-09-09.db, integrity ok; not in git). On-VM copy left at /srv/papersradar/data/backup-2026-09-09.db. Keepalive unit still not installed on the VM.
 
 - 2026-09-08: Created private GitHub repo `rnfunkhouser/papersradar` and pushed all 51 commits. Adopted project conventions (renamed STATUS.md to NOTES.md, added outputs/, repo-local /start and /wrapup, root CLAUDE.md, gitignore patterns). No code changes, no deploy.
 
