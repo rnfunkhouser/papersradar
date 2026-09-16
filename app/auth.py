@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """Magic-link auth + signed-cookie sessions. No passwords anywhere.
 
 Tokens: 32 random url-safe bytes; only the SHA-256 hex is stored, single-use,

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """Gemini TTS + episode audio assembly for the scripted anchor engine.
 
 Each script segment is synthesized separately (bounds request size and gives

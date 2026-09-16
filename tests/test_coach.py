@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """AI profile coach: seed-based autofill (draft prefills, never auto-saves),
 draft suggestions (JSON, nothing applied), vote-informed audit (gating,
 history, previous-audit context), and the shared per-user daily rate limit.

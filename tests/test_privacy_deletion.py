@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """Privacy surface, self-serve account deletion (cascade), and the signed
 no-login unsubscribe endpoint + briefing-email footer."""
 import json

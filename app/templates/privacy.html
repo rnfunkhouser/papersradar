@@ -73,6 +73,11 @@
       Zotero connection from our database immediately.</p>
   </div>
 
+  {% if source_url %}
+  <p class="hint">Everything on this page can be checked against the
+    <a href="{{ source_url }}" rel="noopener">source code</a>, which is open source
+    under the <a href="https://www.gnu.org/licenses/agpl-3.0.html" rel="noopener">GNU AGPL-3.0</a>.</p>
+  {% endif %}
   <p class="hint" style="margin:8px 0 40px">Questions? Email
     <a href="mailto:admin@papersradar.com">admin@papersradar.com</a>.</p>
 </div>

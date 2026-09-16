@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """Podcast stage + feed: script register, episode assembly (WAV fallback path
 — no ffmpeg dependency in tests), stage idempotency, deferred email with
 status footer, token-authenticated RSS feed. Fully offline: the writer LLM

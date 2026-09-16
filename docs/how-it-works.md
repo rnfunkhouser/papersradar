@@ -316,10 +316,10 @@ Verified against the code (see `/privacy` for the user-facing statement):
 ## 13. Provenance
 
 Research Radar is the multi-user evolution of a single-user pipeline the
-founder ran on his own literature for months. The judged-selection design,
+author ran on their own literature for months. The judged-selection design,
 the relevance formula, the batch-judge format, the fit-then-relevance
 ordering, and the priority-journal threshold each carry over from experiments
-in that system that were validated against his hand-ratings of real briefing
+in that system that were validated against the author's hand-ratings of real briefing
 output (blind where feasible). Where this document says "validated," that is
 the evidence base: one researcher's rated corpus — sound enough to ship,
 honest enough to name.

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """Lightweight English-text check (pure stdlib) for ingest filtering.
 
 OpenAlex is filtered server-side (language:en) and gather.keep() honors a

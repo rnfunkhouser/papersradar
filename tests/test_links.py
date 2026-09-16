@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """Outbound link ordering (preprint DOIs are often unregistered — prefer the
 hosting page), the email 'Full summary on your dashboard' deep link, and the
 sentence-safe email excerpt."""

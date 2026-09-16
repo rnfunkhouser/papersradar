@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """SMTP abstraction. When SMTP_HOST is unset -> DEV MODE: emails are logged
 (never sent) and magic-link URLs surface on the admin dev-links page instead.
 Briefing sends silently degrade to dashboard-only.

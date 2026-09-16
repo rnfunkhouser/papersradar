@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """Shared test fixtures: isolated temp DB per test, a stub OpenAlex+Zotero
 HTTP server (tests never hit the network), and a FastAPI TestClient."""
 from __future__ import annotations

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """Live quality probe of the autofill coach (docs/setup-evaluation.md §5).
 
 Runs the ACTUAL coach prompts through the ACTUAL provider router over:

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """Zotero linking: connect/preview/import over HTTP (stubbed API), ledger
 idempotence, removal-safety, key handling."""
 import json

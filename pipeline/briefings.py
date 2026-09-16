@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """Briefing stage: per user due today, select judged-but-never-briefed papers
 (fit >= BRIEFING_MIN_FIT, top BRIEFING_MAX_ITEMS) into briefing_items — the
 dashboard reads that table — and send the email digest when SMTP is

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """HTML-entity hygiene (owner bug report: email showed "&amp;amp;" in a
 title). Entities are decoded at INGEST so the DB holds plain text, legacy
 rows are scrubbed by a one-shot tracked data migration, and templates/email

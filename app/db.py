@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """SQLite access layer: single-file DB, WAL mode, schema-on-connect.
 
 Shared by the web app and the pipeline CLIs. Every caller gets its own

@@ -8,46 +8,28 @@ Not applicable. Operational web service; no manuscript.
 
 ## Open items
 
-### Open-sourcing to-do (queued 2026-09-15, NOT started; pick up on any machine)
-Decided 2026-09-15 after a repo audit (no secrets in any of the 52 commits, no .env/.db ever tracked,
-160 tests pass offline, site already switches to open-source wording when SOURCE_URL is set).
-Podcast/NotebookLM engine: out of scope for now, leave it alone. Do these in order:
-
-1. **License.** Goal: open source, but nobody can just take it and monetize a closed copy.
-   No OSI-approved license forbids commercial use outright; the closest open-source option is
-   **AGPL-3.0** (anyone hosting a modified copy must publish their changes, which removes the
-   incentive for a closed commercial fork). AGPL is also compatible with mutagen (GPL-2.0-or-later).
-   A true "non-commercial" license (PolyForm Noncommercial, CC BY-NC) would block monetization but
-   is not open source by definition. Default to AGPL-3.0 unless Ryan says otherwise. Add: LICENSE
-   file at root, license line in project_admin/README.md, SPDX header comment in every .py file,
-   and the license name in the /about and /privacy pages where the source link appears.
-2. **Anonymize.** Remove personal info from the tree: delete pipeline/import_owner.py (one-time
-   migration; hardcodes name, Gmail, ~/claude/new_papers_briefing path) or generalize it with no
-   defaults; replace ryan.n.funkhouser@gmail.com in pipeline/build_profile.py docstring, DEPLOY.md
-   and DESIGN.md with you@example.com; scrub the 2026-09-09 session-log entry below of server
-   specifics (Oracle ticket ref, IP, backup paths) and keep such details out of NOTES.md from now
-   on. The about-page photo/bio (app/static/ryan.jpg, about.html) stay: already public on the site.
-3. **Drop "founder" wording everywhere.** Ryan is not to be called "founder" anywhere. Rename to
-   "example profile": app/founder_example.py -> app/example_profile.py (and all symbols
-   FOUNDER_* -> EXAMPLE_*), app/templates/_founder_example.html -> _example_profile.html, the
-   attribution string ("This is the founder's own profile...") -> neutral wording such as "An
-   example profile from a political-communication researcher. Yours can be shorter...", plus
-   references in app/web.py, onboarding.html, settings.html, tests/test_onboarding.py,
-   pipeline/build_profile.py, analysis/verify_coach_live.py, DESIGN.md, docs/how-it-works.md,
-   docs/setup-evaluation.md, docs/site-copy.md, and this file. ~42 occurrences across 13 files
-   as of 2026-09-15. Tests must still pass.
-4. **Apply the new site copy.** Ryan edited docs/site-copy.md on 2026-09-15 (committed with this
-   to-do): simpler homepage, several whole sections removed. Update app/templates/landing.html
-   (and any other template the diff touches) to match the new copy exactly; remove the sections
-   he removed. Diff to see what changed: `git log -p --follow docs/site-copy.md`.
-5. **Deploy and test.** `DEPLOY_HOST=ubuntu@papersradar.com ./deploy/deploy.sh`, then verify
-   the live site: homepage renders the new copy with the removed sections gone, /about and
-   /privacy show license/source wording only once SOURCE_URL is set, onboarding example
-   expander shows the neutral attribution, no "founder" string anywhere in rendered pages
-   (`curl -s https://papersradar.com/ | grep -i founder` must be empty).
-6. **Go public (Ryan's call, after 1-5 are merged):** flip GitHub repo visibility, tag a
-   release, set SOURCE_URL in /srv/papersradar/.env, restart web service. Optional before that:
-   run /security-review on auth/admin/Zotero-key code; add CONTRIBUTING.md and SECURITY.md.
+### Open-sourcing (steps 1-5 DONE 2026-09-15; step 6 is Ryan's call)
+- License: GNU AGPL-3.0-or-later. `LICENSE` at root, SPDX header on every .py, license section
+  in project_admin/README.md, license link on /about and /privacy (privacy line only when
+  SOURCE_URL is set). Rationale: open source, but anyone hosting a modified copy must publish
+  their changes, which removes the incentive for a closed commercial fork; compatible with
+  mutagen (GPL-2.0-or-later).
+- Anonymized: pipeline/import_owner.py deleted (replaced by generic tools/make_admin.py for
+  fresh installs; DEPLOY.md/DESIGN.md updated); personal email removed from docs/docstrings;
+  server specifics scrubbed from the 2026-09-09 log entry. Photo/bio on /about and the name in
+  the footer stay (already public on the site by design).
+- "founder" wording gone: app/example_profile.py (EXAMPLE_*), _example_profile.html, template
+  global `example_profile`, neutral attribution "An example profile from a
+  political-communication researcher..."; docs updated.
+- Site copy applied: landing.html rebuilt to the 2026-09-15 docs/site-copy.md (hero + How it
+  works + CTA only; feature grid, testimonial, and free-strip sections removed); footer now
+  names Dr. Ryan Funkhouser. "open source" wording on the landing page and footer remains
+  gated on SOURCE_URL so the site never claims it before the repo is public.
+- Remaining, step 6 (Ryan): flip GitHub repo `rnfunkhouser/papersradar` to public, tag a
+  release (e.g. v1.0.0), set SOURCE_URL=https://github.com/rnfunkhouser/papersradar in
+  /srv/papersradar/.env, `sudo systemctl restart papersradar-web`. Optional first:
+  /security-review on auth/admin/Zotero-key code; add CONTRIBUTING.md and SECURITY.md.
+  Podcast/NotebookLM engine deliberately left untouched (revisit before or after going public).
 
 Other open items: see the "NEXT" entries in the Session log below; consolidate them here as
 they are triaged.
@@ -55,9 +37,9 @@ they are triaged.
 ## Session log
 *Entries below run oldest to newest (inherited from STATUS.md); new entries via /wrapup go at the top of this section, most recent first. This file was project_admin/STATUS.md until 2026-09-08.*
 
-- 2026-09-15: Audited the repo for open-sourcing and queued the to-do list above. Ryan edited docs/site-copy.md (simpler homepage); templates NOT yet updated, nothing deployed.
+- 2026-09-15: Open-sourcing prep executed (license AGPL-3.0, anonymization, 'founder' wording removed, new simpler landing page + footer per docs/site-copy.md). 160 tests pass. Deployed to the VM the same day; see the Open items block for the one remaining step (go public).
 
-- 2026-09-09: Oracle notice (ref f4de4d64): host under the VM is being decommissioned; reboot migration deadline 2026-09-24 17:27 UTC, Oracle auto-migrates within 24h after. Decision: let it happen automatically (boot volume, ephemeral IP 159.54.164.64, enabled units and Persistent timers all survive; worst case one degraded briefing on 09-25 if the reboot lands in the 3:00-4:30am PT run). Safety net taken: consistent SQLite backup + server .env copied to ~/papersradar-backups/ on the work Mac (papersradar-2026-09-09.db, integrity ok; not in git). On-VM copy left at /srv/papersradar/data/backup-2026-09-09.db. Keepalive unit still not installed on the VM.
+- 2026-09-09: Cloud provider announced a host migration for the VM (deadline late 2026-09-24 UTC, auto-migrates within 24h after). Decision: let it happen automatically (boot volume, enabled units and Persistent timers survive; worst case one degraded briefing on 09-25). Safety net taken: consistent SQLite backup + server .env copied to private storage off the VM, not in git. Keepalive unit still not installed on the VM.
 
 - 2026-09-08: Created private GitHub repo `rnfunkhouser/papersradar` and pushed all 51 commits. Adopted project conventions (renamed STATUS.md to NOTES.md, added outputs/, repo-local /start and /wrapup, root CLAUDE.md, gitignore patterns). No code changes, no deploy.
 
@@ -100,8 +82,8 @@ reserved), local embedder swap, LLM prose summaries, feedback CSV export.
 - /privacy (claims verified against code) + inline data note on login/signup;
   self-serve account deletion in Settings (type DELETE, full cascade).
 - Structured onboarding (6 steps): describe research / topics & intersections
-  (starrable, repeatable) / exclusions — each with the founder's real profile
-  as a "full example" expander (app/founder_example.py). structured_profile()
+  (starrable, repeatable) / exclusions — each with a complete example profile
+  as a "full example" expander (app/example_profile.py). structured_profile()
   composes the judge contract (default intersections fit rule; starred
   flavors rendered "(CORE)"); additive users columns migrate on connect;
   legacy paragraph-only users keep the fallback path. Settings has the same
@@ -207,7 +189,7 @@ Deployed + verified live:
   the one-shot backfill), consider Oracle PAYG upgrade.
 - docs/setup-evaluation.md: top-5 wording/eliciting improvements (negatives
   over-broadness warning, autofill seed sampling fix, exemplar elicitation,
-  de-founder the judge rubric band, bullseye/permission-clause patterns) —
+  generalize the judge rubric band, bullseye/permission-clause patterns) —
   PROPOSALS ONLY, awaiting owner's copy pass over docs/site-copy.md.
 
 ## 2026-08-31 — daily podcast (owner-only): built + tested, awaiting VM deploy

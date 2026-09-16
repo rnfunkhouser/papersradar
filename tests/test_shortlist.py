@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """Shortlist math: cosine relevance, top-k contrast recipe, per-user queue."""
 import json
 

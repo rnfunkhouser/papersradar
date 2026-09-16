@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """Judge prompt/parse contract — single verdicts, batched verdicts, and the
 prompt builder's structure (the exact judge.py contract)."""
 from pipeline import judging

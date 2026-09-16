@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """AI profile coach — prompt builders, strict-JSON parsers, and the vote-
 evidence assembly for its three modes:
 

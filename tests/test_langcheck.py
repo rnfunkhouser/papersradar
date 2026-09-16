@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """Language screen: the stopword heuristic, the gather.keep() gate, and the
 one-shot corpus scrub. The French fixture is the actual SocArXiv abstract
 that reached the 2026-09-04 briefing."""

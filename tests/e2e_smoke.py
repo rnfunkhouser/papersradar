@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """End-to-end smoke test: boots the real app under uvicorn (dev mode, stubbed
 OpenAlex/Zotero, temp DB), registers a user over plain HTTP, completes
 onboarding with 3 seed papers, runs the offline-safe pipeline pieces, and

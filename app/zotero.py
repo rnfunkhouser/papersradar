@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """Zotero client — ported from the single-user harvest.py sync_zotero()
 (append-only ledger, DOI from the record or the 'extra' field, confident
 title-resolution fallback) and adapted per-user:

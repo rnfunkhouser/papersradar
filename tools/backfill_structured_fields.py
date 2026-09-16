@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """Backfill a legacy user's structured settings fields from their live judge
 profile, WITHOUT changing judge behavior.
 

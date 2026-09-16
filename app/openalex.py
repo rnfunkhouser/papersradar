@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """OpenAlex client used by onboarding (seed lookup-and-confirm) and by the
 pipeline (seed record fetch, gathering). Keyless "polite pool" (mailto param).
 Base URL is configurable so tests run against a local stub.

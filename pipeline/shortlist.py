@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """Per-user shortlist: cosine relevance of each corpus paper against the
 user's seed vectors, using the validated recipe from harvest.py's
 attach_embedding_relevance(contrast="pool"):

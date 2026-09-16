@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """Empirical evaluation of the priority-journal auto-include threshold.
 
 Priority-journal papers get GUARANTEED judge slots — but only if their

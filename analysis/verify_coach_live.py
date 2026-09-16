@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """Live verification of the AI-coach prompt wiring — exactly 3 routed chat
-calls (one per coach mode), hard-capped, using synthetic founder-flavored
+calls (one per coach mode), hard-capped, using synthetic example-profile-flavored
 data. Run from a machine whose .env has at least one provider key:
 
     python3 analysis/verify_coach_live.py

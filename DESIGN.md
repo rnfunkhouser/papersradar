@@ -45,14 +45,15 @@ placeholder is retired).
 - Rate limits (DB-backed): 5 requests / email / 15 min, 30 / IP / 15 min.
 - **Dev mode:** when `SMTP_HOST` is unset, the login link is written to the
   structured log AND listed on `/admin/dev-links` (admin-only). First-ever
-  login on a fresh install: `pipeline/import_owner.py` creates the admin, and
-  the link also appears in the app log — documented in DEPLOY.md.
+  login on a fresh install: `tools/make_admin.py --email you@example.com`
+  creates the admin, and the link also appears in the app log — documented in
+  DEPLOY.md.
 
 ### Onboarding wizard (`/onboarding`, steps 1–7, progress bar)
 Each step explains itself in plain language for a non-technical academic.
 Steps 2–4 are the STRUCTURED interest editor (2026-08): each carries a
-"Want to see a full example?" expander showing the founder's real profile
-(hardcoded in `app/founder_example.py`).
+"Want to see a full example?" expander showing a complete example profile
+(hardcoded in `app/example_profile.py`).
 1. **About you** — name, how often to email (daily / weekly / dashboard-only),
    papers-per-briefing (5–10, blank = global default), and the per-user
    **Western-context scope option** (default OFF, with a respectful paragraph
@@ -289,10 +290,8 @@ row per stage. Stages, in order:
 
 `pipeline/build_profile.py --user <id|email>` is independently runnable (also
 invoked by the web app on onboarding/settings change).
-`pipeline/import_owner.py` seeds Ryan's account (email
-ryan.n.funkhouser@gmail.com, admin) from the old repo's
-`free_stack/frozen_seed_texts.json` (132 seeds with texts) + his existing
-`interest_profile.json` — day-one working account.
+`tools/make_admin.py --email <email>` creates (or promotes) the admin
+account on a fresh install; the admin then onboards through the normal wizard.
 
 ## 5. Quota math (free tiers, checked 2026-08-07)
 

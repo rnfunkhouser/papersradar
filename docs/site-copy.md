@@ -45,7 +45,7 @@
 
 ## Worked example expander ("Want to see a full example?")
 
-[STRUCTURE] A collapsible panel under the instructions of the research-description, topics, and exclusions editors. Collapsed it shows only the summary line; expanded it shows an attribution line, then the founder's real profile content for that step (statement, or topic cards, or a bulleted exclusion list — bullets use the • character).
+[STRUCTURE] A collapsible panel under the instructions of the research-description, topics, and exclusions editors. Collapsed it shows only the summary line; expanded it shows an attribution line, then the example profile content for that step (statement, or topic cards, or a bulleted exclusion list — bullets use the • character).
 
 **Expander label:**
 > Want to see a full example?

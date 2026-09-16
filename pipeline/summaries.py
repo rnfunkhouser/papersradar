@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """Summaries stage: a real generated prose summary for every paper briefed
 today (any user), fulfilling the email's "full summary on your dashboard"
 link. Grounded in fetched OA full text when available (methods, samples, key

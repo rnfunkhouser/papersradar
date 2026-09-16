@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """AI profile coach endpoints: seed-based autofill, draft suggestions, and
 the vote-informed profile audit. Every endpoint is per-user rate-limited
 (COACH_DAILY_LIMIT calls/day across ALL modes, tracked in coach_usage), and

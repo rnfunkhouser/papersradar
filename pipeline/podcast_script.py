@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """Podcast script writer: turns one day's briefed papers into (a) a verbatim
 single-anchor narration script — one segment per paper, written by the LLM
 router in the locked register (docs/PODCAST_DESIGN.md §A) — and (b) the

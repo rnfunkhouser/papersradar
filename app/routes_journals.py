@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """Priority journals: autocomplete against the OpenAlex sources API, plus
 add/remove of a user's priority list. Papers from these journals are always
 gathered and get guaranteed judge slots when close enough to the user's

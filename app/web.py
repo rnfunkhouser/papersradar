@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """Shared web helpers: template env, per-request DB, session -> user."""
 from __future__ import annotations
 
@@ -12,14 +13,14 @@ from app import db, auth
 TEMPLATES_DIR = Path(__file__).parent / "templates"
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
-# The founder's real profile, shown as the worked example in the structured
+# A complete example profile, shown as the worked example in the structured
 # interest editor (onboarding + settings).
-from app import founder_example  # noqa: E402
-templates.env.globals["founder"] = {
-    "attribution": founder_example.FOUNDER_ATTRIBUTION,
-    "core_statement": founder_example.FOUNDER_CORE_STATEMENT,
-    "flavors": founder_example.FOUNDER_FLAVORS,
-    "negatives": founder_example.FOUNDER_NEGATIVES,
+from app import example_profile  # noqa: E402
+templates.env.globals["example_profile"] = {
+    "attribution": example_profile.EXAMPLE_ATTRIBUTION,
+    "core_statement": example_profile.EXAMPLE_CORE_STATEMENT,
+    "flavors": example_profile.EXAMPLE_FLAVORS,
+    "negatives": example_profile.EXAMPLE_NEGATIVES,
 }
 
 SESSION_COOKIE = "pr_session"

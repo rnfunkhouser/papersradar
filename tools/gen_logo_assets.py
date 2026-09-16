@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """Generate PNG logo assets from the Echo mark (option B, 2026-08-09 logo choice).
 
 The canonical mark is the inline SVG in app/templates/base.html; this renders

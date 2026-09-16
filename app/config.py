@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """Configuration loader: .env file + environment variables (env wins).
 
 Every module (web app + pipeline) reads settings through `cfg()`, so tests can

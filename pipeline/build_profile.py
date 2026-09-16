@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """Build or refresh ONE user's interest profile. Runnable standalone
 (onboarding/settings changes also enqueue it; the nightly `profiles` stage
 sweeps anyone still pending).
 
-    python3 -m pipeline.build_profile --user ryan.n.funkhouser@gmail.com
+    python3 -m pipeline.build_profile --user you@example.com
 
 Steps (each best-effort and resumable):
   1. Core profile row: exists already (created synchronously at onboarding
@@ -72,7 +73,7 @@ def bump_version() -> str:
 # --- structured onboarding -> judge profile ----------------------------------
 
 # Default fit rule composed for structured profiles: flavors-as-intersections,
-# modeled on the founder's own rule. The CORE sentence is appended only when
+# modeled on the example profile's rule. The CORE sentence is appended only when
 # the user starred at least one flavor.
 DEFAULT_FIT_RULE = (
     "Each flavor above is already an intersection of the researcher's "

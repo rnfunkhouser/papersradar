@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """Daily pipeline orchestrator — plain CLI, invoked by cron/systemd-timer.
 Every stage is idempotent and safe to re-run; all state lives in the SQLite
 DB; each stage writes a pipeline_runs row and structured lines to

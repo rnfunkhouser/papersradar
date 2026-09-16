@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """Zotero linking routes — used from onboarding step 3 AND settings.
 Flow: connect (validates creds, stores key encrypted) -> pick collection &
 preview -> confirm import -> seeds appear; later: re-sync / disconnect.

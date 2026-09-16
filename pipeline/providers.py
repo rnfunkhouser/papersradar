@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """Multi-provider OpenAI-compatible chat router (adapted from the validated
 free_stack/providers.py, 2026-08-07 comparison run).
 

@@ -52,7 +52,7 @@ Findings:
 - **T3 — Owner-specific text leaks into EVERY user's rubric.** The hardcoded
   4–6 band in `judging.build_prompt` reads "competent on one COMPONENT of a
   flavor **(AI alone, politics alone, persuasion alone, narrative alone)**".
-  Those parenthetical examples are the *founder's* components; a coral
+  Those parenthetical examples are the *example profile's* components; a coral
   ecologist's judge is told about "politics alone". Worse, "persuasion alone"
   is precisely the clause his own review (W1) identified as a wording
   bottleneck. The parenthetical should be dropped or generated from the
@@ -69,7 +69,7 @@ loopholes**. Per failure mode:
 | Failure mode (ref) | Current wizard behavior | Verdict |
 |---|---|---|
 | **W1 — missing flavor → wanted papers at fit ≤2** (persuasion-alone science was top-shelf for him, but no flavor claimed it) | The topics step *pushes* intersections ("Intersections beat broad topics") and the hardcoded rubric bins single components at 4–6. A user whose interests include a standalone dimension gets no prompt to declare it, and the guidance actively steers them away from doing so. | **Reproduces it.** The intersection doctrine is right for noise control but needs the counter-question: "is any single strand a bullseye on its own? Say so explicitly." |
-| **W2 — over-broad negatives swallowing wanted papers** ("attitudes TOWARD AI" + "chatbot UX" vetoed AI-as-communicator perception work he rated 4–5) | The negatives step says exclusions "do a lot of work" and encourages adding them; no warning that a broad negative outranks flavors in practice, no nudge toward conditional phrasing ("X *with no* Y") or IN-pointers ("...are IN, per flavor_z"). The founder example silently models the conditional pattern, but nothing names it. | **Reproduces it** (guidance); the *suggest* coach, when invoked, does catch it — see probe §5. |
+| **W2 — over-broad negatives swallowing wanted papers** ("attitudes TOWARD AI" + "chatbot UX" vetoed AI-as-communicator perception work the example-profile author rated 4–5) | The negatives step says exclusions "do a lot of work" and encourages adding them; no warning that a broad negative outranks flavors in practice, no nudge toward conditional phrasing ("X *with no* Y") or IN-pointers ("...are IN, per flavor_z"). The example profile silently models the conditional pattern, but nothing names it. | **Reproduces it** (guidance); the *suggest* coach, when invoked, does catch it — see probe §5. |
 | **W3 — advertising/theory loophole** (fit_rule calibration never applied because the judge cites the flavor description, not the rule) | Users can't write calibration notes at all during onboarding (T2), so they can't even create this bug — but they also can't do the fix (put calibrations INTO the flavor description). No guidance says "the judge reads each flavor description as self-contained; put boundary rules inside the flavor they police." | **Reproduces the class.** |
 | **W5 — never-firing flavor** (small_stories: 0 fires in ~150 verdicts; a missing "even with no persuasion or politics component" permission killed its best match) | Nothing tells users that a flavor whose description leans on the profile's other themes will never fire alone; no "permission clause" pattern is taught; the product surfaces per-flavor evidence only inside the ≥20-votes audit. | **Reproduces it.** |
 | **W6 — mid-list mentions too weak** (the judge denied the very phrases the flavor contained, because they sat mid-list; dedicated sentences fixed it) | No guidance on sentence placement or one-claim-per-sentence writing. | **Reproduces it.** |
@@ -97,7 +97,7 @@ decide whether a user stays long enough to reach 20 votes.
 5. **Conditional negatives with IN-pointers** — "...unless about political
    discourse, narrative, or misinformation"; "(empirical studies of
    democratic attitudes are IN, per political_discourse_online)". Modeled in
-   the founder example, never named in guidance.
+   the example profile, never named in guidance.
 6. **~6 flavors** — wizard/coach ranges (3–6) match; no gap.
 
 ## 4. Per-step verdicts
@@ -123,7 +123,7 @@ boundary-sentence form:
 > background noise."
 
 **Topics & intersections — REWORD (two additions).** The intersection
-doctrine and founder examples are right and well-placed, but the step needs
+doctrine and example-profile expanders are right and well-placed, but the step needs
 the W1 counter-question and the W5/W6 permission-clause pattern:
 
 > PROPOSED WORDING (append to instruction note): "Two checks before you
@@ -272,7 +272,7 @@ long as* the fork's editing note stays and the seed-sampling defect is fixed.
 3. **Elicit positive exemplars from seeds** ("star 3–5 seeds as 'exactly my
    thing'" → `positive_exemplar_titles`). Fills the empty prompt section the
    owner's profile leans on; reuses existing UI patterns.
-4. **De-founder the hardcoded 4–6 rubric band** in `judging.build_prompt`
+4. **Generalize the hardcoded 4–6 rubric band** in `judging.build_prompt`
    ("AI alone, politics alone, persuasion alone" → the user's own flavor
    components, or drop the parenthetical). Every non-political-comm user's
    judge currently reads another researcher's examples mid-rubric.
@@ -282,4 +282,4 @@ long as* the fork's editing note stays and the seed-sampling defect is fixed.
    owner's profile its highest-rated papers.
 
 (Honorable mention: surface the fit-rule as "calibration notes (optional)"
-with a founder example instead of "leave blank to use the default" — T2.)
+with an example-profile excerpt instead of "leave blank to use the default" — T2.)

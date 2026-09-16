@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """A custom (out-of-band) fit_rule survives structured settings edits; only
 default-composed rules stay in sync with the core flags. Guards the owner's
 imported, calibrated rubric against a settings-save clobber (2026-09-04)."""

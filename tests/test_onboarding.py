@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """Onboarding: entry fork (papers-first vs write-it-myself), step ordering,
 OpenAlex lookup-and-confirm, validation gates, finish flow — via HTTP against
 the stubbed OpenAlex."""
@@ -186,7 +187,7 @@ def test_flavors_step_requires_complete_entry(client):
     assert r.status_code == 303
 
 
-def test_onboarding_shows_founder_example(client):
+def test_onboarding_shows_example_profile(client):
     login(client, "ex@example.com")
     client.post("/onboarding/path", data={"path": "manual"})
     client.post("/onboarding/about", data={"name": "Dr E", "frequency": "daily"})
@@ -199,7 +200,7 @@ def test_onboarding_shows_founder_example(client):
     assert "political-communication researcher" in r.text
     r = client.get("/onboarding?step=2")
     assert "Want to see a full example?" in r.text
-    assert "bridging divides" in r.text          # founder flavor key, prettified
+    assert "bridging divides" in r.text          # example-profile flavor key, prettified
     r = client.get("/onboarding?step=3")
     assert "Want to see a full example?" in r.text
     assert "Public attitudes TOWARD AI" in r.text

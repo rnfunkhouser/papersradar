@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """Research Radar web app. Run locally:
 
     uvicorn app.main:app --reload

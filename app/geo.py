@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """Geographic scope support for the per-user "Western-context" option.
 
 The option (users.western_context, default OFF) narrows a user's briefings to

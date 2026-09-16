@@ -3,61 +3,30 @@
 {% block content %}
 
 <section class="hero">
-  <span class="eyebrow">{% if source_url %}A fully free, open-source tool for researchers{% else %}A fully free tool for researchers{% endif %}</span>
+  <span class="eyebrow">{% if source_url %}A free, open-source tool for researchers{% else %}A free tool for researchers{% endif %}</span>
   <h1>Your daily <span class="grad">research radar</span>.<br>Never miss the paper that matters.</h1>
   <p class="sub">Research Radar scans the day's new publications and preprints each
-    morning and surfaces the handful that actually fit <em>your</em> research —
-    each with a plain-English rationale you can check.</p>
+    morning to find and summarize the handful that actually fit <em>your</em>
+    research.</p>
   <div class="hero-cta">
     <a class="btn btn-lg" href="/login">Create an account</a>
     <a class="btn btn-lg btn-ghost" href="#how">How it works</a>
   </div>
-  <p class="hero-free">Free for everyone — no tiers, no card, no catch. Built by a
-    researcher to advance research, not to sell anything.</p>
-</section>
-
-<section class="section">
-  <div class="wrap">
-    <h2>Made for how academics actually read</h2>
-    <p class="lead">Keyword alerts are imprecise, and tables of contents arrive late.
-      This tool reads new abstracts against a description of your work that you write
-      and can edit.</p>
-    <div class="grid3">
-      <div class="feature">
-        <div class="icon">&#127757;</div>
-        <h3>Field-agnostic coverage</h3>
-        <p>OpenAlex, arXiv, SocArXiv and PsyArXiv — journals and preprints across
-          disciplines, gathered daily from the research areas your own seed papers
-          live in.</p>
-      </div>
-      <div class="feature">
-        <div class="icon">&#128269;</div>
-        <h3>Readable AI rationales</h3>
-        <p>An AI judge reads every shortlisted abstract against criteria you can read
-          and edit, then scores fit 0–10 with a one-sentence reason. No black-box
-          ranking — the "why" is always shown.</p>
-      </div>
-      <div class="feature">
-        <div class="icon">&#127919;</div>
-        <h3>Corrects with your feedback</h3>
-        <p>Thumbs-up and thumbs-down on any pick become boundary examples the judge
-          reads on the next run, so the selection tracks your actual judgment over
-          time.</p>
-      </div>
-    </div>
-  </div>
+  <p class="hero-free">{% if source_url %}Free and open source.{% else %}Free for everyone.{% endif %}</p>
 </section>
 
 <section class="section" id="how">
   <div class="wrap">
     <h2>How it works</h2>
-    <p class="lead">Two stages, both inspectable: <strong>Gathering</strong> casts the
-      net, <strong>Selection</strong> reads what was caught.</p>
+    <p class="lead">Two stages: <strong>Gathering</strong> scans for papers that might
+      be of interest, <strong>Selection</strong> uses your preferences to pick the very
+      best ones.</p>
     <div class="steps">
       <div class="step">
         <h3>Describe your work</h3>
-        <p>Write down your interests in your own words and add a few papers you wish
-          you'd been alerted to. Setup takes about five minutes.</p>
+        <p>Describe your research interests and (optionally) link to a Zotero folder
+          of seed papers that represent your interests. Setup takes about five
+          minutes.</p>
       </div>
       <div class="step">
         <h3>Daily gathering &amp; shortlist</h3>
@@ -68,37 +37,10 @@
       <div class="step">
         <h3>An AI judge reads the shortlist</h3>
         <p>The judge scores each shortlisted abstract against your Selection
-          Criteria. Papers that clear your bar appear in your dashboard and, if you
-          want, your inbox — rationale attached.</p>
+          Criteria. Papers that clear your bar are linked and summarized in a daily
+          dashboard and (optional) email.</p>
       </div>
     </div>
-  </div>
-</section>
-
-<section class="section">
-  <div class="wrap">
-    <div class="quote">
-      <p class="who" style="margin-bottom:10px">From an early user:</p>
-      <blockquote>&ldquo;This is exactly what I was looking for. Instead of relying on
-        seeing a colleague post about a relevant new pub (or on imprecise keyword
-        alerts), this surfaces exactly the kinds of papers most relevant to my
-        work.&rdquo;</blockquote>
-      <div class="who">— early user, political communication researcher</div>
-    </div>
-  </div>
-</section>
-
-<section class="free-strip">
-  <div class="wrap">
-    <h2>Free, because it should be</h2>
-    <p>Research Radar is {% if source_url %}an open-source tool{% else %}a tool{% endif %}
-      built and run by a researcher to advance research. There are no pricing tiers,
-      no premium plan, and no credit card — every feature is available to everyone,
-      and your data is never sold or shared
-      (<a href="/privacy">how your data is handled</a>{% if source_url %} ·
-      <a href="{{ source_url }}">source code</a>{% endif %}).
-      If you find it valuable and want to contribute, you can
-      <a href="https://ko-fi.com/rfunkhouser" rel="noopener">buy me a coffee ☕</a>.</p>
   </div>
 </section>
 

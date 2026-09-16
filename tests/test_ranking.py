@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """Briefing ordering: judge fit is the band, embedding relevance orders papers
 within a band (validated 2026-08 on the single-user system's 41 blind
 ratings). Covers the judgments.relevance migration, judge-time persistence,

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """Briefing archive: auth gating, per-user isolation, day view, LIKE search
 over the user's own archived items, empty state, votes on archived cards."""
 import json

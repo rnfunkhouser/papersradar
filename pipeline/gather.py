@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """Gathering stage: build the SHARED daily corpus from OpenAlex (union of all
 users' retrieval concepts), arXiv, and OSF preprint servers. Ported and
 trimmed from the single-user harvest.py. Dedupe against papers.key; only new

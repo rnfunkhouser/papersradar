@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """nlm-agent (vision-driven Gemini Notebook engine): coordinate scaling,
 action execution against a fake page, the phase loop (done / step budget /
 safety), response-shape tolerance, and the docker invocation. Fully offline —

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """Client for a self-hosted notebooklm-mcp worker (the NotebookLM two-host
 podcast engine). The worker (github.com/roomi-fields/notebooklm-mcp, run via
 its Docker image — a dedicated Google account logged in once through noVNC)

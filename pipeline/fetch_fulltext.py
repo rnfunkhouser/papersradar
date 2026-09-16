@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """Full-text stage: fetch OPEN-ACCESS full text for papers briefed today to
 podcast-enabled users, so podcast scripts are grounded in the actual paper
 instead of the abstract (ported from the single-user system's

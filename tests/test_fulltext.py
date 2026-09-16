@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """Full-text stage: OA fetch routes, sniffing, negative cache, extraction.
 Fully offline — a local stub serves fake arXiv/Unpaywall/OA responses."""
 from __future__ import annotations

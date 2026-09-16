@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """Podcast stage: for each podcast-enabled user briefed today, generate the
 day's episode(s) with every engine in PODCAST_ENGINES ("anchor" = scripted
 single-anchor via Gemini TTS; "nlm" = NotebookLM two-host via the

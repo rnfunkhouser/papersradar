@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """Embedding provider abstraction. Every stored vector carries the embedder
 NAME and DIM (see seed_embeddings / paper_embeddings), so switching embedders
 never corrupts existing data — shortlisting only compares same-embedder

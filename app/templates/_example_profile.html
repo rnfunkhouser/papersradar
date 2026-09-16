@@ -1,20 +1,20 @@
-{# Worked example expander — the founder's real profile.
+{# Worked example expander — a complete example profile.
    Set `example_part` to "core" | "flavors" | "negatives" before including. #}
 <details class="example">
   <summary>Want to see a full example?</summary>
   <div class="example-body">
-    <div class="who">{{ founder.attribution }}</div>
+    <div class="who">{{ example_profile.attribution }}</div>
     {% if example_part == "core" %}
-      <div class="ex-item"><p>&ldquo;{{ founder.core_statement }}&rdquo;</p></div>
+      <div class="ex-item"><p>&ldquo;{{ example_profile.core_statement }}&rdquo;</p></div>
     {% elif example_part == "flavors" %}
-      {% for f in founder.flavors %}
+      {% for f in example_profile.flavors %}
         <div class="ex-item">
           <span class="k">{{ f.key.replace('_', ' ') }}</span>
           <p>{{ f.description }}</p>
         </div>
       {% endfor %}
     {% elif example_part == "negatives" %}
-      {% for n in founder.negatives %}
+      {% for n in example_profile.negatives %}
         <div class="ex-item"><p>&bull; {{ n }}</p></div>
       {% endfor %}
     {% endif %}

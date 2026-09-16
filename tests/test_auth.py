@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """Auth: magic-link token lifecycle, session signing, rate limiting,
 secret-at-rest encryption."""
 import datetime as dt

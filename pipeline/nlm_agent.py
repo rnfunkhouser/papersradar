@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """Vision-driven Gemini Notebook agent: drives the (rebranded) NotebookLM web
 UI with the Gemini computer-use model instead of brittle CSS selectors — the
 model looks at screenshots and picks actions, so Google UI redesigns don't

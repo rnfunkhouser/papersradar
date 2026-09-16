@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """Western-context scope option: the Broad-West constant, the hard venue
 filter in the per-user queue, the soft judge-prompt instruction, and the
 profile-version bump on toggle (verdict caches must never mix prompts)."""

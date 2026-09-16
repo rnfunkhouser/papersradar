@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """Priority journals: autocomplete + add/remove, gather of journal works and
 source-country enrichment, the guaranteed-judge-slot rule (percentile floor +
 cap), and the priority marking on dashboard and email."""

@@ -67,31 +67,21 @@ sudo caddy validate --config /etc/caddy/Caddyfile && sudo systemctl reload caddy
 
 ## 2. First-run data setup
 
-Copy the two owner-import files from the old repo to the VM (they are personal
-data, not in this git repo):
-
-```bash
-scp ~/claude/new_papers_briefing/free_stack/frozen_seed_texts.json \
-    ~/claude/new_papers_briefing/interest_profile.json \
-    ubuntu@papersradar.com:/tmp/
-```
-
-Then on the VM (creates the DB, imports Ryan's account as admin, runs the
-first pipeline):
+On the VM: create the DB and the admin account, log in through the normal
+onboarding wizard (add seeds + interests), then run the first pipeline:
 
 ```bash
 cd /srv/papersradar/app
 sudo -u papersradar ENV_FILE=/srv/papersradar/.env \
-    /srv/papersradar/venv/bin/python3 -m pipeline.import_owner \
-    --seeds-json /tmp/frozen_seed_texts.json --profile-json /tmp/interest_profile.json
+    /srv/papersradar/venv/bin/python3 tools/make_admin.py --email you@example.com
+# ... complete onboarding in the browser as that user, then:
 sudo -u papersradar ENV_FILE=/srv/papersradar/.env nice -n 10 \
     /srv/papersradar/venv/bin/python3 -m pipeline.run_daily all
-rm /tmp/frozen_seed_texts.json /tmp/interest_profile.json
 ```
 
 Notes on the first `run_daily all`:
-- `profiles` embeds the 132 seeds ≈ 3 OpenRouter requests; fetching their
-  OpenAlex records is ~132 keyless calls.
+- `profiles` embeds the seeds (a few OpenRouter requests per hundred seeds);
+  fetching their OpenAlex records is one keyless call per seed.
 - `gather` backfills a 14-day window (DB empty ⇒ automatic backfill) — this is
   the long stage (tens of minutes, OpenAlex paging).
 - `embed` may hit the OpenRouter 50-requests/day cap mid-backfill (≈3,200
@@ -107,7 +97,7 @@ sudo -u papersradar sqlite3 /srv/papersradar/data/papersradar.db \
   "SELECT stage, status, detail FROM pipeline_runs ORDER BY id DESC LIMIT 5;"
 ```
 
-Then in a browser: request a login link for ryan.n.funkhouser@gmail.com. In
+Then in a browser: request a login link for the admin email. In
 dev mode grab it with:
 
 ```bash

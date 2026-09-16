@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """Summaries stage + dashboard rendering: grounded vs abstract-only prompts,
 idempotency, early-stop on provider failure, and the card showing the
 generated summary above the abstract dropdown."""

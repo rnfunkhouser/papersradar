@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """Public routes: landing, magic-link login, about-scores explainer."""
 from __future__ import annotations
 

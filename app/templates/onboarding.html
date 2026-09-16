@@ -109,7 +109,7 @@
       Criteria — the instructions an AI reader uses to score every paper's fit for
       you. You can edit every word later.
     </div>
-    {% set example_part = "core" %}{% include "_founder_example.html" %}
+    {% set example_part = "core" %}{% include "_example_profile.html" %}
     <form method="post" action="/onboarding/interests">
       <label>Your research, in a few sentences</label>
       <textarea name="statement" rows="7" placeholder="I study how ... I'm especially interested in ... Papers about X in general are background noise; what I care about is ...">{{ user.interest_statement or draft_statement }}</textarea>
@@ -149,7 +149,7 @@
       communication" beats "climate change". Star (&#9733;) the topics that matter
       most.
     </div>
-    {% set example_part = "flavors" %}{% include "_founder_example.html" %}
+    {% set example_part = "flavors" %}{% include "_example_profile.html" %}
     <form method="post" action="/onboarding/flavors">
       {% include "_flavor_editor.html" %}
       {% include "_coach_suggest.html" %}
@@ -174,7 +174,7 @@
       applications of your topic that don't interest you. This is optional but does a
       lot of work — it's how the AI reader learns your boundaries.
     </div>
-    {% set example_part = "negatives" %}{% include "_founder_example.html" %}
+    {% set example_part = "negatives" %}{% include "_example_profile.html" %}
     <form method="post" action="/onboarding/negatives">
       {% include "_negatives_editor.html" %}
       {% include "_coach_suggest.html" %}

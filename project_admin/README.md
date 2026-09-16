@@ -10,6 +10,7 @@ providers (Groq/Gemini/Cerebras/OpenRouter + keyless OpenAlex).
 
 - `DESIGN.md` — architecture, data model, quota math
 - `DEPLOY.md` — server runbook (Oracle VM, papersradar.com)
+- `LICENSE` — GNU AGPL-3.0-or-later (see below)
 
 ## Layout
 
@@ -17,7 +18,7 @@ providers (Groq/Gemini/Cerebras/OpenRouter + keyless OpenAlex).
 app/        FastAPI web app (landing, magic-link auth, onboarding wizard,
             dashboard, settings, Zotero linking, admin) + templates + static
 pipeline/   batch CLI: run_daily.py (profiles|gather|embed|shortlist-judge|
-            briefings), build_profile.py, import_owner.py, providers.py
+            briefings), build_profile.py, providers.py
             (free-tier chat router), embedder.py, judging.py (judge contract)
 deploy/     systemd units, Caddyfile snippet, deploy.sh (rsync + restart)
 tests/      pytest suite + e2e smoke — fully offline (stub OpenAlex/Zotero)
@@ -42,3 +43,12 @@ python3 -m pipeline.providers --check        # keys + today's quota counters
 python3 -m pipeline.run_daily gather --since 2026-08-01
 python3 -m pipeline.build_profile --user you@example.com
 ```
+
+## License
+
+Research Radar is free software under the **GNU Affero General Public License,
+version 3 or later** (`LICENSE` at the repo root; every `.py` file carries an
+SPDX header). You may use, study, modify and redistribute it. If you run a
+modified version as a network service, the AGPL requires you to offer its
+source to the users of that service. Contributions are accepted under the same
+license.

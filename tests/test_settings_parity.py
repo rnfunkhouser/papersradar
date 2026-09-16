@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """Settings parity: every decision collected during onboarding must be
 modifiable later from the settings surface, with equivalent behavior
 (interest edits and the geo toggle re-queue judging identically from both).

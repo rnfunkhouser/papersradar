@@ -1,18 +1,19 @@
-"""The founder's own research-interest profile, used as the worked example in
-the structured onboarding wizard ("Want to see a full example?") and settings.
+# SPDX-License-Identifier: AGPL-3.0-or-later
+"""A complete example research-interest profile (a political-communication
+researcher), used as the worked example in the structured onboarding wizard
+("Want to see a full example?") and settings.
 
-Hardcoded verbatim from the founder's real interest_profile.json (2026-07-23-v3)
-so onboarding needs no file or network access. Attributed in the UI as "the
-founder's own profile". The source file does not star any flavor as 'core' —
-each is treated as a bullseye in its own right — so none are starred here.
+Hardcoded so onboarding needs no file or network access. Attributed in the UI
+as an example profile. It does not star any flavor as 'core' — each is treated
+as a bullseye in its own right — so none are starred here.
 """
 from __future__ import annotations
 
-FOUNDER_ATTRIBUTION = ("This is the founder's own profile — a political-"
-                       "communication researcher. Yours can be shorter; "
-                       "specificity matters more than length.")
+EXAMPLE_ATTRIBUTION = ("An example profile from a political-communication "
+                       "researcher. Yours can be shorter; specificity "
+                       "matters more than length.")
 
-FOUNDER_CORE_STATEMENT = (
+EXAMPLE_CORE_STATEMENT = (
     "I am a political-communication researcher. I study how communication — "
     "increasingly AI-mediated — persuades, changes behavior, and bridges or "
     "deepens ideological divides, especially online. My interests come in a few "
@@ -23,7 +24,7 @@ FOUNDER_CORE_STATEMENT = (
     "not as an object of public opinion or a research tool."
 )
 
-FOUNDER_FLAVORS = [
+EXAMPLE_FLAVORS = [
     {"key": "bridging_divides", "core": False, "description":
      "Communication mechanisms for bridging ideological divides, especially "
      "online: depolarization interventions, cross-partisan conversation, "
@@ -60,7 +61,7 @@ FOUNDER_FLAVORS = [
      "spreads, what fades, and how fast) count here."},
 ]
 
-FOUNDER_NEGATIVES = [
+EXAMPLE_NEGATIVES = [
     "Public attitudes TOWARD AI, AI governance, or AI ethics — where AI is the "
     "object of opinion rather than the communicator or intervention",
     "LLMs as research or measurement tools (generating surveys, coding data, "

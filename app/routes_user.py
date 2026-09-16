@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """Signed-in routes: onboarding wizard, dashboard, feedback, click-through
 logging, settings."""
 from __future__ import annotations

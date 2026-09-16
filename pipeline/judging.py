@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """The LLM judge — EXACT prompt/parse contract preserved from the single-user
 system's judge.py (2026-07-23 design), plus the batched 8-papers-per-call
 variant validated in free_stack (Phase C: 5/5 identical top picks vs the old

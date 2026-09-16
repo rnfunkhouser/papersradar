@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """Provider quota accounting: DB counters, daily caps enforced by the router
 and the embedder, error counting."""
 import datetime as dt

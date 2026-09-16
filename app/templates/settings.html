@@ -72,19 +72,19 @@
       <a href="/about-scores">How scoring works</a>.</p>
     <form method="post" action="/settings/criteria">
       <label>Your research, in a few sentences</label>
-      {% set example_part = "core" %}{% include "_founder_example.html" %}
+      {% set example_part = "core" %}{% include "_example_profile.html" %}
       <textarea name="core_statement" rows="6">{{ prof.core_statement or user.interest_statement }}</textarea>
 
       <label>Topics &amp; intersections</label>
       <p class="hint">Each topic gets a short name and 1–3 sentences. Intersections
         beat broad topics; star (&#9733;) the ones that matter most.</p>
-      {% set example_part = "flavors" %}{% include "_founder_example.html" %}
+      {% set example_part = "flavors" %}{% include "_example_profile.html" %}
       {% include "_flavor_editor.html" %}
 
       <label>Explicitly <em>not</em> of interest</label>
       <p class="hint">Adjacent-but-irrelevant areas, methods or literatures to
         exclude.</p>
-      {% set example_part = "negatives" %}{% include "_founder_example.html" %}
+      {% set example_part = "negatives" %}{% include "_example_profile.html" %}
       {% include "_negatives_editor.html" %}
 
       <label>Fit rule (optional fine print for the judge)</label>
