@@ -1,7 +1,7 @@
 # papersradar (Research Radar)
 
 ## Current status
-Live at papersradar.com on the Oracle Cloud VM. Last logged work 2026-09-04: generated paper summaries live end-to-end (see that entry's resume notes at the bottom). Repo first pushed to a private GitHub repo 2026-09-08; before that it existed only on this Mac.
+Live at papersradar.com on the Oracle Cloud VM. Last logged work 2026-09-04: generated paper summaries live end-to-end (see that entry's resume notes at the bottom). Repo public on GitHub since 2026-09-17 (AGPL-3.0); private from 2026-09-08, and only on this Mac before that.
 
 ## Manuscript location
 Not applicable. Operational web service; no manuscript.
@@ -22,7 +22,7 @@ the deck carries a revision note at the top but its per-page quotes for non-land
 stale. Refresh when convenient.
 
 
-### Open-sourcing (steps 1-5 DONE 2026-09-15; step 6 is Ryan's call)
+### Open-sourcing (all steps DONE; public since 2026-09-17)
 - License: GNU AGPL-3.0-or-later. `LICENSE` at root, SPDX header on every .py, license section
   in project_admin/README.md, license link on /about and /privacy (privacy line only when
   SOURCE_URL is set). Rationale: open source, but anyone hosting a modified copy must publish
@@ -39,17 +39,19 @@ stale. Refresh when convenient.
   works + CTA only; feature grid, testimonial, and free-strip sections removed); footer now
   names Dr. Ryan Funkhouser. "open source" wording on the landing page and footer remains
   gated on SOURCE_URL so the site never claims it before the repo is public.
-- Remaining, step 6 (Ryan): flip GitHub repo `rnfunkhouser/papersradar` to public, tag a
-  release (e.g. v1.0.0), set SOURCE_URL=https://github.com/rnfunkhouser/papersradar in
-  /srv/papersradar/.env, `sudo systemctl restart papersradar-web`. Optional first:
-  /security-review on auth/admin/Zotero-key code; add CONTRIBUTING.md and SECURITY.md.
-  Podcast/NotebookLM engine deliberately left untouched (revisit before or after going public).
+- Step 6 DONE 2026-09-17: repo `rnfunkhouser/papersradar` is PUBLIC (final history scan clean);
+  SOURCE_URL set in /srv/papersradar/.env; site shows open-source wording, repo links on
+  /about and /privacy, footer "source code" link. Still optional: tag a release, /security-review
+  on auth/admin/Zotero-key code, CONTRIBUTING.md and SECURITY.md. Podcast/NotebookLM engine
+  left untouched and is now public too; revisit whether to keep it in the tree.
 
 Other open items: see the "NEXT" entries in the Session log below; consolidate them here as
 they are triaged.
 
 ## Session log
 *Entries below run oldest to newest (inherited from STATUS.md); new entries via /wrapup go at the top of this section, most recent first. This file was project_admin/STATUS.md until 2026-09-08.*
+
+- 2026-09-17 (later): Repo made public and SOURCE_URL configured on the VM; see Open items.
 
 - 2026-09-17: Login investigation: a university email link-scanner consumed a single-use sign-in
   token 13 s after issue, so the person saw "expired". Fix deployed: GET /auth/<token> now shows a
