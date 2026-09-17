@@ -264,7 +264,7 @@
 > **Daily gathering & shortlist** — Each morning the pipeline searches the research areas your seed papers point to and shortlists new work that sits closest to them by semantic similarity, not keywords.
 
 **Step 3:**
-> **An AI judge reads the shortlist** — The judge scores each shortlisted abstract against your Selection Criteria. Papers that clear your bar are linked and summarized in a daily dashboard and (optional) email.
+> **An AI judge picks the best ones** — The judge scores each shortlisted abstract against your Selection Criteria. Papers that clear your bar are linked and summarized in a daily dashboard and (optional) email.
 
 
 
