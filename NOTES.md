@@ -8,14 +8,6 @@ Not applicable. Operational web service; no manuscript.
 
 ## Open items
 
-### REMINDER for Ryan: add Brevo to the SPF record (Cloudflare DNS, papersradar.com)
-Set the TXT record on the apex to exactly:
-`v=spf1 include:_spf.mx.cloudflare.net include:spf.brevo.com ~all`
-Why: Brevo relays the sign-in and briefing emails; DKIM is already aligned via the brevo1/brevo2
-CNAMEs, but SPF does not include Brevo, and the 2026-09-17 test showed multi-minute delays to a
-new Gmail address. Not done as of 2026-09-17 (cannot be edited from the repo). Remove this block
-when done.
-
 ### Pending: refresh docs/site-copy.md per-page quotes
 The 2026-09-17 tone rewrite (no "we", instructional tone) was applied directly in the templates;
 the deck carries a revision note at the top but its per-page quotes for non-landing pages are
@@ -58,7 +50,7 @@ they are triaged.
   confirm page (auth_confirm.html) and only the POST redeems (auth.token_is_live + redeem_token);
   TOKEN_TTL_MIN 20 -> 60. New test test_link_get_does_not_consume_token. Same day: site-wide copy
   pass on every page except the landing page (see docs/site-copy.md revision note); 161 tests pass.
-  SPF reminder for Ryan added to Open items.
+  SPF record updated by Ryan the same day (include:spf.brevo.com verified via 1.1.1.1 and 8.8.8.8).
 
 - 2026-09-15: Open-sourcing prep executed (license AGPL-3.0, anonymization, 'founder' wording removed, new simpler landing page + footer per docs/site-copy.md). 160 tests pass. Deployed to the VM the same day; see the Open items block for the one remaining step (go public).
 
