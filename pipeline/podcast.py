@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: AGPL-3.0-or-later
-"""Podcast stage: for each podcast-enabled user briefed today, generate the
+"""EXPERIMENTAL, not a general feature: off unless PODCAST_ENGINES is set and
+an account is enabled by the administrator (`python3 -m pipeline.podcast
+enable <email>`). No user-facing setting exists. See docs/PODCAST_DESIGN.md.
+
+Podcast stage: for each podcast-enabled user briefed today, generate the
 day's episode(s) with every engine in PODCAST_ENGINES ("anchor" = scripted
 single-anchor via Gemini TTS; "nlm" = NotebookLM two-host via the
 notebooklm-mcp worker), then send the user's briefing email with the episode

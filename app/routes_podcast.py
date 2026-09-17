@@ -1,5 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
-"""Private podcast feed: a real RSS 2.0 feed (iTunes tags) per podcast-enabled
+"""EXPERIMENTAL, not a general feature (see docs/PODCAST_DESIGN.md).
+
+Private podcast feed: a real RSS 2.0 feed (iTunes tags) per podcast-enabled
 user at /podcast/<token>/feed.xml — the token is the per-user secret minted by
 `pipeline.podcast enable`, so the URL itself is the auth (standard practice
 for private/member feeds). Subscribe by URL in any podcast app; episodes are

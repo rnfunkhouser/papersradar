@@ -1,4 +1,6 @@
-# Podcast feature — design spec (owner-only)
+# Podcast feature — design spec (experimental, per-account opt-in)
+
+> **Status (2026-09-17): experimental, not a general feature.** The podcast is an opt-in experiment enabled by the site administrator for individual accounts via `python3 -m pipeline.podcast enable <email>`. It is off by default (`PODCAST_ENGINES` empty), has no user-facing setting, is not offered on papersradar.com to the public, and is not required for any other part of the tool. The NotebookLM engine additionally depends on browser automation of a Google product and is not recommended for general use. Treat this code as a prototype.
 
 *Locked 2026-08-31 with Ryan. Status: BUILT 2026-08-31 (130 tests passing);
 deploy-by-hand steps in `PODCAST_RUNBOOK.md`.*

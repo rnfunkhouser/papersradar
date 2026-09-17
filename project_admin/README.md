@@ -24,6 +24,13 @@ deploy/     systemd units, Caddyfile snippet, deploy.sh (rsync + restart)
 tests/      pytest suite + e2e smoke — fully offline (stub OpenAlex/Zotero)
 ```
 
+## Experimental: daily podcast (not a general feature)
+
+`pipeline/podcast*.py`, `pipeline/tts.py`, `pipeline/nlm_agent.py`,
+`app/routes_podcast.py`, `deploy/nlm-agent/` and `docs/PODCAST_*.md` implement an
+opt-in audio briefing. The podcast is an opt-in experiment enabled by the site administrator for individual accounts via `python3 -m pipeline.podcast enable <email>`. It is off by default (`PODCAST_ENGINES` empty), has no user-facing setting, is not offered on papersradar.com to the public, and is not required for any other part of the tool. The NotebookLM engine additionally depends on browser automation of a Google product and is not recommended for general use. Treat this code as a prototype.
+
+
 ## Local dev
 
 ```bash

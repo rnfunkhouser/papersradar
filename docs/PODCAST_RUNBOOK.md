@@ -1,5 +1,7 @@
 # Podcast runbook — deploy, setup, and maintenance
 
+> **Status (2026-09-17): experimental, not a general feature.** The podcast is an opt-in experiment enabled by the site administrator for individual accounts via `python3 -m pipeline.podcast enable <email>`. It is off by default (`PODCAST_ENGINES` empty), has no user-facing setting, is not offered on papersradar.com to the public, and is not required for any other part of the tool. The NotebookLM engine additionally depends on browser automation of a Google product and is not recommended for general use. Treat this code as a prototype.
+
 Companion to `docs/PODCAST_DESIGN.md` (the locked spec). Code is built and
 tested; everything below is the by-hand part on the VM, in order. The anchor
 engine (§1–4) works with zero Google-account setup — do it first and you have
