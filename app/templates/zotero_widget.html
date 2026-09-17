@@ -98,6 +98,8 @@
           <input type="hidden" name="next" value="{{ znext }}">
           <button class="btn" type="submit">Import {{ zotero_preview.new }} paper{{ 's' if zotero_preview.new != 1 }}</button>
         </form>
+        <p class="hint" style="margin-top:8px">Importing a large library can take a
+          minute or so; leave the page open until it finishes.</p>
       {% endif %}
     {% endif %}
 
