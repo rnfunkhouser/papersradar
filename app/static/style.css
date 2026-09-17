@@ -84,6 +84,9 @@ body { overflow-x: hidden; }
 .nav { margin-left: auto; display: flex; align-items: center; gap: 16px; font-size: 14.5px; }
 .nav a { color: var(--text-2); font-weight: 500; }
 .nav a:hover { color: var(--text); text-decoration: none; }
+/* .nav a outranks .btn on specificity; keep button text white (ghost keeps its own) */
+.nav a.btn, .nav a.btn:hover { color: #fff; }
+.nav a.btn-ghost, .nav a.btn-ghost:hover { color: var(--text); }
 
 /* --- buttons & forms ------------------------------------------------------- */
 .btn {
