@@ -4,32 +4,33 @@
 <div class="wrap page-narrow">
   <h1>How Research Radar works</h1>
 
-  <p>Research Radar exists because keeping up with new research shouldn't come
-    down to luck. Keyword alerts bury the occasional right paper under a pile of
-    near-misses — and still miss work you genuinely need to see. This page
-    explains what the tool actually does each morning; the mechanics are simple
-    enough to state precisely.</p>
+  <p>Research Radar is a small open-source tool for keeping up with new
+    research. Keyword alerts return many near-misses and still miss relevant
+    work. This tool instead reads each new abstract against a description of
+    your research that you write and can edit. This page describes what runs
+    each morning.</p>
 
   <div class="pipe-flow" aria-label="The daily pipeline">
     <div class="pipe-stage">
       <span class="pipe-num">1</span>
       <div><strong>Gathering</strong>
-        <p>New papers and preprints pulled daily from OpenAlex, arXiv, SocArXiv
-          and PsyArXiv, searched in the research areas your seed papers live in.</p>
+        <p>New papers and preprints are pulled daily from OpenAlex, arXiv,
+          SocArXiv and PsyArXiv, in the research areas your seed papers
+          belong to.</p>
       </div>
     </div>
     <div class="pipe-stage">
       <span class="pipe-num">2</span>
       <div><strong>Shortlist by meaning</strong>
         <p>Each candidate is compared to your seed papers by embedding
-          similarity — closeness of meaning, not shared keywords. The closest
-          form your shortlist.</p>
+          similarity (closeness of meaning rather than shared keywords). The
+          closest form the shortlist.</p>
       </div>
     </div>
     <div class="pipe-stage">
       <span class="pipe-num">3</span>
       <div><strong>The AI judge</strong>
-        <p>A language model reads every shortlisted abstract against the
+        <p>A language model reads each shortlisted abstract against the
           Selection Criteria you wrote, scores fit 0&ndash;10, and gives a
           one-sentence rationale.</p>
       </div>
@@ -37,45 +38,43 @@
     <div class="pipe-stage">
       <span class="pipe-num">4</span>
       <div><strong>Your briefing</strong>
-        <p>Papers that clear your fit bar, ranked by fit — on your dashboard
-          and, if you want, in your inbox. Your votes feed the next day's
+        <p>Papers above your fit threshold, ranked by fit, appear on your
+          dashboard and optionally by email. Your votes feed the next day's
           judging.</p>
       </div>
     </div>
   </div>
 
-  <p>The first two stages cast the net. Every morning the pipeline pulls the
-    newest publications across fields from <strong>OpenAlex</strong> (which
-    indexes most scholarly journals) plus the <strong>arXiv, SocArXiv and
-    PsyArXiv</strong> preprint servers, searching the research areas derived
-    from users' seed papers, with obvious noise (errata, book reviews,
-    non-articles) filtered out. Each candidate's title and abstract is turned
-    into an <em>embedding</em> — a numerical representation of its meaning —
-    and compared to the embeddings of your seed papers; the candidates that sit
-    closest form your daily shortlist. This stage is deliberately generous: its
-    job isn't to decide, only to make sure the right papers reach the judge.</p>
+  <p>Stages 1 and 2 are retrieval. Each morning the pipeline pulls the newest
+    publications from <strong>OpenAlex</strong> (which indexes most scholarly
+    journals) and the <strong>arXiv, SocArXiv and PsyArXiv</strong> preprint
+    servers, searching the research areas derived from users' seed papers.
+    Errata, book reviews and other non-articles are filtered out. Each
+    candidate's title and abstract is converted to an <em>embedding</em>, a
+    numerical representation of its meaning, and compared to the embeddings
+    of your seed papers. The closest candidates form your daily shortlist.
+    This stage is deliberately generous: its job is to make sure relevant
+    papers reach the judge, not to decide.</p>
 
-  <p>The judge is where selection actually happens. A large language model
-    reads each shortlisted title and abstract against your <strong>Selection
-    Criteria</strong> — the description, topics, and exclusions you wrote in
-    your own words — and scores the paper's fit for you from 0 to 10 with a
-    one-sentence rationale you can check on every card. Your briefing shows
-    what clears your fit bar, ranked by fit score, with embedding closeness to
-    your seeds breaking ties. Thumbs-up and thumbs-down votes become boundary
-    examples the judge reads on every following run, so the selection tracks
-    your actual judgment over time.</p>
+  <p>Stage 3 is where selection happens. A large language model reads each
+    shortlisted title and abstract against your <strong>Selection
+    Criteria</strong>, the description, topics and exclusions you wrote, and
+    scores the paper's fit from 0 to 10 with a one-sentence rationale shown
+    on every card. Your briefing lists what clears your fit threshold, ranked
+    by fit score, with embedding closeness to your seeds breaking ties.
+    Thumbs-up and thumbs-down votes become boundary examples the judge reads
+    on every following run.</p>
 
-  <p class="about-methods">Want every detail under the hood — each design and
-    filtering decision, with the exact thresholds and formulas? The full
-    methods document
+  <p class="about-methods">The full methods document, with each design and
+    filtering decision and the exact thresholds and formulas, is
     {% if source_url %}
-    (<a href="{{ source_url }}/blob/main/docs/how-it-works.md" rel="noopener">docs/how-it-works.md</a>)
-    in the <a href="{{ source_url }}" rel="noopener">GitHub repository</a>
-    walks through the whole pipeline. The code is open source under the
+    <a href="{{ source_url }}/blob/main/docs/how-it-works.md" rel="noopener">docs/how-it-works.md</a>
+    in the <a href="{{ source_url }}" rel="noopener">GitHub repository</a>.
+    The code is open source under the
     <a href="https://www.gnu.org/licenses/agpl-3.0.html" rel="noopener">GNU AGPL-3.0</a>.
     {% else %}
-    (docs/how-it-works.md) in the GitHub repository walks through the whole
-    pipeline <span class="hint">(repository link coming soon)</span>.
+    docs/how-it-works.md in the GitHub repository
+    <span class="hint">(repository link coming soon)</span>.
     {% endif %}</p>
 
   <div class="about-me">
@@ -83,14 +82,13 @@
     <div>
       <h3>Behind the tool</h3>
       <p>I'm Ryan Funkhouser, a political-communication researcher at the
-        University of Idaho, where I study how communication shapes political
-        attitudes and behavior. I built Research Radar — in part using AI —
-        because my own keyword alerts kept missing the papers that mattered.
-        It's free, and I welcome feedback, feature requests, or bug reports at
+        University of Idaho. I built Research Radar, in part using AI, after
+        my own keyword alerts kept missing the papers that mattered to my
+        work. Feedback, feature requests and bug reports are welcome at
         <a href="mailto:admin@papersradar.com">admin@papersradar.com</a>.</p>
-      <p>If you find it a useful service and want to help with the basic costs
-        of running it, you can <a href="https://ko-fi.com/rfunkhouser"
-        rel="noopener">buy me a coffee ☕</a>. Appreciated, never expected.</p>
+      <p>Hosting is paid out of pocket. Contributions toward those costs via
+        <a href="https://ko-fi.com/rfunkhouser" rel="noopener">Ko-fi</a> are
+        welcome but never expected.</p>
     </div>
   </div>
 </div>

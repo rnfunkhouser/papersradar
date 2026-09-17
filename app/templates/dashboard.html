@@ -24,15 +24,14 @@
     <div class="empty">
       <div class="big">&#128225;</div>
       {% if not profile_ready %}
-        <h2>Your radar is warming up</h2>
-        <p>Your {{ n_seeds }} seed papers are in. The next pipeline run (each morning)
-          finishes your profile, gathers candidates, and scores them — your first
+        <h2>Your profile is still warming up</h2>
+        <p>Your {{ n_seeds }} seed papers are saved. The next pipeline run (each morning)
+          finishes your profile, gathers candidates, and scores them. Your first
           briefing appears here after that.</p>
       {% else %}
         <h2>No briefing yet{% if dates %} for this day{% endif %}</h2>
-        <p>Quiet days happen — when nothing clears your fit bar, we'd rather show you
-          nothing than noise. Check back tomorrow, or broaden your
-          <a href="/settings">Selection Criteria</a>.</p>
+        <p>Nothing cleared your fit threshold on this day. Check back tomorrow, or
+          broaden your <a href="/settings">Selection Criteria</a>.</p>
       {% endif %}
     </div>
   {% endif %}

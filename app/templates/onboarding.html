@@ -1,8 +1,8 @@
 {% extends "base.html" %}
-{% block title %}Set up your radar — Research Radar{% endblock %}
+{% block title %}Setup — Research Radar{% endblock %}
 {% block content %}
 <div class="wrap-narrow">
-  <h1 class="page-title">Set up your radar</h1>
+  <h1 class="page-title">Setup</h1>
   <div class="progress">
     {% for i in range(1, n_steps + 1) %}<span class="{{ 'done' if step >= i }}"></span>{% endfor %}
   </div>
@@ -20,10 +20,10 @@
   <div class="panel">
     <h3>Two ways to write your Selection Criteria</h3>
     <div class="field-note">
-      Your radar runs on your <strong>Selection Criteria</strong> — a
+      The tool runs on your <strong>Selection Criteria</strong>: a
       plain-English description of your research that an AI judge reads against
-      every new paper, every morning. Choose how to write the first draft;
-      either way, you review and edit every field before anything is saved.
+      every new paper, every morning. Choose how to write the first draft.
+      Either way, you review and edit every field before anything is saved.
     </div>
     <div class="fork-option">
       <form method="post" action="/onboarding/path">
@@ -31,9 +31,9 @@
         <button class="btn" type="submit">Start from my papers</button>
         <span class="hint" style="margin-left:8px">recommended</span>
       </form>
-      <p class="hint">You add papers that fit your interests first — paste DOIs
-        or link a Zotero library — and we draft your description, topics and
-        exclusions from them. Then you walk through the same steps as the
+      <p class="hint">Add papers that fit your interests first (paste DOIs
+        or link a Zotero library), and the tool drafts your description, topics
+        and exclusions from them. You then walk through the same steps as the
         written path, with every field pre-filled for you to edit.</p>
     </div>
     <div class="fork-option">
@@ -44,24 +44,24 @@
       <p class="hint">You describe your research in your own words, step by
         step, with a worked example at each step. Seed papers come after.</p>
     </div>
-    <p class="hint" style="margin-top:14px">One thing to know before you pick:
-      a drafted profile is a starting point, not a finished setup. The radar is
-      only as sharp as these descriptions, so plan to edit and refine whatever
-      the draft gets almost-right. You can switch approaches anytime with the
-      Back button.</p>
+    <p class="hint" style="margin-top:14px">A drafted profile is a starting
+      point, not a finished setup. Selection is only as sharp as these descriptions,
+      so plan to edit and refine whatever the draft gets
+      almost right. You can switch approaches at any time with the Back
+      button.</p>
   </div>
 
   {% elif step_slug == "about" %}
   <div class="panel">
-    <h3>Nearly there — a few basics.</h3>
+    <h3>Account basics</h3>
     <form method="post" action="/onboarding/about">
       <label>Your name</label>
       <input type="text" name="name" value="{{ user.name }}" placeholder="Dr. Ada Lovelace" required>
-      <label>How often should we email your briefing?</label>
+      <label>Briefing email frequency</label>
       <select name="frequency">
         <option value="daily" {% if user.frequency == 'daily' %}selected{% endif %}>Daily (each morning)</option>
         <option value="weekly" {% if user.frequency == 'weekly' %}selected{% endif %}>Weekly (Mondays)</option>
-        <option value="none" {% if user.frequency == 'none' %}selected{% endif %}>Don't email me — I'll use the dashboard</option>
+        <option value="none" {% if user.frequency == 'none' %}selected{% endif %}>Dashboard only, no email</option>
       </select>
       <label>How many papers per briefing?</label>
       <select name="briefing_size">
@@ -70,8 +70,8 @@
           <option value="{{ n }}" {% if user.briefing_size == n %}selected{% endif %}>Up to {{ n }}</option>
         {% endfor %}
       </select>
-      <p class="hint">Only papers that clear your fit bar make the briefing —
-        this sets the ceiling, not a quota.</p>
+      <p class="hint">Only papers that clear your fit threshold make the briefing.
+        This sets the ceiling, not a quota.</p>
       <label style="display:flex;gap:8px;align-items:flex-start;margin-top:14px">
         <input type="checkbox" name="western_context" value="1" style="width:auto;margin-top:3px"
                {% if user.western_context %}checked{% endif %}>
@@ -86,7 +86,7 @@
         out, and papers focused on non-Western contexts are weighed somewhat
         lower — though strong, highly relevant work can still make your
         briefing. Off by default; change it any time in Settings.</p>
-      <p class="hint">You can change any of this any time in Settings.</p>
+      <p class="hint">All of this can be changed later in Settings.</p>
       <button class="btn" type="submit" style="margin-top:14px">Continue</button>
     </form>
   </div>
@@ -96,8 +96,8 @@
 
   {% elif step_slug == "describe" %}
   {% if coach_draft %}
-  <div class="notice ai-draft-banner"><strong>AI draft — edit to make it
-    yours.</strong> These fields were drafted from your seed papers. Nothing is
+  <div class="notice ai-draft-banner"><strong>AI draft. Edit before
+    saving.</strong> These fields were drafted from your seed papers. Nothing is
     saved until you review and continue through each step.</div>
   {% endif %}
   <div class="panel">
@@ -120,7 +120,7 @@
     <form method="post" action="/coach/autofill" style="margin-top:12px">
       <button class="btn btn-ghost" type="submit">Draft this from my seed papers</button>
       <span class="hint" style="margin-left:8px">Pre-fills any empty fields from
-        your {{ seeds|length }} seeds — your own words are never overwritten.</span>
+        your {{ seeds|length }} seeds. Your own words are never overwritten.</span>
     </form>
     {% elif not user.interest_statement and not coach_draft %}
     <p class="hint" style="margin-top:12px">Prefer to start from a draft built
@@ -134,8 +134,8 @@
 
   {% elif step_slug == "topics" %}
   {% if coach_draft %}
-  <div class="notice ai-draft-banner"><strong>AI draft — edit to make it
-    yours.</strong> Topics below were drafted from your seed papers — rename,
+  <div class="notice ai-draft-banner"><strong>AI draft. Edit before
+    saving.</strong> Topics below were drafted from your seed papers. Rename,
     rewrite or remove them freely; nothing is saved until you continue.</div>
   {% endif %}
   <div class="panel">
@@ -162,9 +162,9 @@
 
   {% elif step_slug == "negatives" %}
   {% if coach_draft %}
-  <div class="notice ai-draft-banner"><strong>AI draft — edit to make it
-    yours.</strong> These candidate exclusions were drafted from your seed
-    papers — keep only the ones that ring true.</div>
+  <div class="notice ai-draft-banner"><strong>AI draft. Edit before
+    saving.</strong> These candidate exclusions were drafted from your seed
+    papers. Keep only the ones that are accurate.</div>
   {% endif %}
   <div class="panel">
     <h3>What you're <em>not</em> interested in</h3>
@@ -189,12 +189,13 @@
   <div class="panel">
     <h3>Journals you never want to miss</h3>
     <div class="field-note">
-      Optional. Pick the journals whose new papers you'd always want screened —
-      your field's flagship outlets, or a favorite niche journal. We fetch
-      <strong>every new paper</strong> these journals publish (even ones our
-      seed-based search wouldn't have found), and any that sit reasonably close
-      to your interests get a <strong>guaranteed spot</strong> in front of the
-      AI judge. Picks from these journals are labeled in your briefing.
+      Optional. Pick the journals whose new papers should always be screened,
+      such as your field's main outlets or a niche journal you follow. The
+      pipeline fetches <strong>every new paper</strong> these journals publish,
+      including ones the seed-based search would not find, and any that sit
+      reasonably close to your interests get a <strong>guaranteed slot</strong>
+      before the AI judge. Papers from these journals are labeled in your
+      briefing.
     </div>
     {% include "_journals_editor.html" %}
   </div>
@@ -207,20 +208,20 @@
   <div class="panel">
     <h3>Add {% if path == 'papers' %}your {% endif %}seed papers</h3>
     <div class="field-note">
-      <strong>What seeds do:</strong> seeds steer the <em>Gathering</em> stage — every
-      morning we search the research areas your seed papers live in and shortlist new
-      work that sits semantically close to them.{% if path == 'papers' %} They're also
+      <strong>What seeds do:</strong> seeds steer the <em>Gathering</em> stage. Every
+      morning the pipeline searches the research areas your seed papers belong to and
+      shortlists new work that sits semantically close to them.{% if path == 'papers' %} They're also
       the raw material for your drafted Selection Criteria (next step).{% endif %}
-      Aim for {{ min_seeds }}–100 papers you
-      wish you'd been alerted to when they came out. More seeds = a better-aimed
-      net{% if path == 'papers' %} and a sharper draft{% endif %}.
+      Aim for {{ min_seeds }}–100 papers that
+      represent what you want to find. More seeds give a better-aimed
+      search{% if path == 'papers' %} and a sharper draft{% endif %}.
     </div>
     <form method="post" action="/onboarding/seeds">
       <label>Paste DOIs or titles — one per line</label>
       <textarea name="papers" rows="5" placeholder="10.1038/s41586-024-01234-5
 The title of a paper also works"></textarea>
-      <p class="hint">We look each one up on OpenAlex and show you what we found —
-        remove anything that isn't right.</p>
+      <p class="hint">Each entry is looked up on OpenAlex and shown for review.
+        Remove anything that is not right.</p>
       <button class="btn" type="submit" style="margin-top:12px">Look up &amp; add</button>
     </form>
 
@@ -242,10 +243,10 @@ The title of a paper also works"></textarea>
 
   {% if seeds|length >= min_seeds and path == 'papers' %}
   <div class="panel">
-    <h3>Next: we draft your criteria from these papers</h3>
+    <h3>Next: draft your criteria from these papers</h3>
     {% if coach_draft %}
-    <p class="hint">A draft from your seeds is ready — continue to review and
-      edit it, or re-draft if you've changed your seeds since.</p>
+    <p class="hint">A draft from your seeds is ready. Continue to review and
+      edit it, or re-draft if you have changed your seeds since.</p>
     <div style="display:flex;gap:10px;align-items:center">
       <a class="btn" href="/onboarding?step={{ step + 1 }}">Continue to your draft</a>
       <form method="post" action="/coach/autofill" style="display:inline">
@@ -254,9 +255,9 @@ The title of a paper also works"></textarea>
     </div>
     {% else %}
     <p class="hint">One AI pass reads your {{ seeds|length }} seeds and drafts
-      your research description, topics and exclusions. You'll edit each step
-      before anything is saved — the draft is a starting point, and the radar
-      is only as sharp as your final wording.</p>
+      your research description, topics and exclusions. You edit each step
+      before anything is saved. The draft is a starting point; selection is
+      only as sharp as your final wording.</p>
     <form method="post" action="/coach/autofill">
       <button class="btn" type="submit">Draft my criteria &amp; continue</button>
     </form>
@@ -270,10 +271,10 @@ The title of a paper also works"></textarea>
   {% if seeds|length >= min_seeds and path != 'papers' and not coach_draft
         and not user.interest_statement %}
   <div class="panel">
-    <h3>Want a head start on your criteria?</h3>
-    <p class="hint">We can draft your research description, topics and
-      exclusions <strong>from these seed papers</strong> — you land back in the
-      editor to make every word yours before anything is saved.</p>
+    <h3>Optional: draft your criteria from these seeds</h3>
+    <p class="hint">The tool can draft your research description, topics and
+      exclusions <strong>from these seed papers</strong>. You return to the
+      editor to review every word before anything is saved.</p>
     <form method="post" action="/coach/autofill">
       <button class="btn btn-ghost" type="submit">Draft my profile from my seed papers</button>
     </form>
@@ -294,18 +295,17 @@ The title of a paper also works"></textarea>
 
   {% elif step_slug == "review" %}
   <div class="panel">
-    <h3>How your radar will work</h3>
-    <p style="margin:10px 0">Two stages, every morning:</p>
-    <p style="margin:8px 0"><strong>1 · Gathering</strong> casts the net: we search
+    <h3>Review: what will run each morning</h3>
+    <p style="margin:8px 0"><strong>1 · Gathering.</strong> The pipeline searches
       OpenAlex, arXiv, SocArXiv and PsyArXiv in the research areas learned from your
-      <strong>{{ seeds|length }} seed papers</strong>, and shortlist the new papers
+      <strong>{{ seeds|length }} seed papers</strong>, and shortlists the new papers
       that sit closest to them.</p>
-    <p style="margin:8px 0"><strong>2 · Selection</strong> decides: an AI judge reads
-      each shortlisted abstract against your Selection Criteria — your description,
+    <p style="margin:8px 0"><strong>2 · Selection.</strong> An AI judge reads
+      each shortlisted abstract against your Selection Criteria (your description,
       your <strong>{{ flavors|length }} topic{{ 's' if flavors|length != 1 }}</strong>,
-      and your {{ negatives|length }} exclusion{{ 's' if negatives|length != 1 }} —
+      and your {{ negatives|length }} exclusion{{ 's' if negatives|length != 1 }})
       and scores its <strong>fit</strong> from 0–10 with a one-sentence rationale.
-      Only the best make your briefing.</p>
+      Papers above your threshold make the briefing.</p>
     {% if priority_journals %}
     <p style="margin:8px 0"><strong>Plus:</strong> every new paper from your
       {{ priority_journals|length }} priority
@@ -313,14 +313,14 @@ The title of a paper also works"></textarea>
       ones close enough to your interests get guaranteed judge slots and are
       labeled in your briefing.</p>
     {% endif %}
-    <p style="margin:8px 0"><strong>You stay in charge:</strong> thumbs-up/down any pick
-      and the judge treats it as a boundary example the very next day. Edit your
-      criteria any time in Settings — every scoring rule is plain English you can read.</p>
+    <p style="margin:8px 0"><strong>Feedback.</strong> Thumbs-up or thumbs-down on any
+      paper becomes a boundary example for the judge from the next day on. Criteria
+      can be edited at any time in Settings; every scoring rule is plain English.</p>
   </div>
   <div style="display:flex;justify-content:space-between;margin:18px 0">
     <a class="btn btn-ghost" href="/onboarding?step={{ step - 1 }}">Back</a>
     <form method="post" action="/onboarding/finish">
-      <button class="btn btn-lg" type="submit">Launch my radar</button>
+      <button class="btn btn-lg" type="submit">Finish setup</button>
     </form>
   </div>
   {% endif %}

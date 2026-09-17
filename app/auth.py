@@ -17,7 +17,7 @@ import secrets
 from app.config import cfg, smtp_configured
 from app import db
 
-TOKEN_TTL_MIN = 20
+TOKEN_TTL_MIN = 60
 SESSION_TTL_DAYS = 90
 RATE_PER_EMAIL = 5          # login requests per email per window
 RATE_PER_IP = 30            # per client IP per window
@@ -71,11 +71,25 @@ def issue_token(con, email: str) -> tuple[str, str]:
     return token, url
 
 
-def redeem_token(con, token: str) -> str | None:
-    """Single-use redemption -> email, or None if unknown/expired/used."""
+def _live_token_row(con, token: str):
     row = con.execute("SELECT * FROM auth_tokens WHERE token_hash=?",
                       (_hash(token),)).fetchone()
     if not row or row["used_at"] or row["expires_at"] < dt.datetime.now().isoformat():
+        return None
+    return row
+
+
+def token_is_live(con, token: str) -> bool:
+    """True if the token exists, is unused and unexpired. Does NOT consume it —
+    used by the GET confirmation page so email link-scanners that prefetch
+    the URL cannot burn a single-use link before the person clicks."""
+    return _live_token_row(con, token) is not None
+
+
+def redeem_token(con, token: str) -> str | None:
+    """Single-use redemption -> email, or None if unknown/expired/used."""
+    row = _live_token_row(con, token)
+    if not row:
         return None
     con.execute("UPDATE auth_tokens SET used_at=?, dev_link=NULL WHERE token_hash=?",
                 (db.now(), row["token_hash"]))

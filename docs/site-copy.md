@@ -1,5 +1,7 @@
 # Research Radar — Site Copy Worksheet
 
+> **Revision note (2026-09-17).** All pages other than the landing page were rewritten for tone: no first-person plural ("we/our/us"), marketing phrasing trimmed, wording now reads as instructions for an open-source academic tool ("the tool", "the pipeline", "the project"). Sign-in links now open a confirm page with a Sign in button and last 60 minutes. The templates in `app/templates/` are authoritative for those pages until the per-page quotes below are refreshed.
+
 ## How to use this file
 
 - **To change wording:** edit any quoted text (the lines starting with `>`) directly in place. Whatever you write there is what should appear on the site.
@@ -310,7 +312,7 @@
 **H2:** > Check your inbox
 
 **Paragraph:**
-> We sent a sign-in link to **«email»**. It works once and expires in 20 minutes. (No email? Check spam, then try again.)
+> We sent a sign-in link to **«email»**. It works once and expires in 60 minutes. (No email? Check spam, then try again.)
 
 [STRUCTURE] Dev-mode variant (only when the server has no outgoing email configured): H2 "Link created" + explanatory paragraph.
 
@@ -825,7 +827,7 @@
 > Your account lives in a single database on our server. It holds: your **email address** and name, your **research-interest text** (your description, topics, and exclusions), your **seed papers**, your settings (briefing frequency and size, scope option, **priority journals**), and — if you use them — your **thumbs-up/down votes**, **briefing click logs** (which picks you opened), and any **AI-coach drafts and audit reports** generated from your own seeds and votes, plus the briefings and fit scores we compute for you. That's it — there is nothing else to store, because there are no payments and no profiles beyond your research interests.
 
 **Panel — Signing in:**
-> There are no passwords. Sign-in links are **one-time** and expire in 20 minutes; we keep only a **hashed** copy of each link's token, so a stored token can't be replayed. After you click a link, you stay signed in on that device via a signed browser **cookie** for **90 days** (or until you sign out).
+> There are no passwords. Sign-in links are **one-time** and expire in 60 minutes; we keep only a **hashed** copy of each link's token, so a stored token can't be replayed. After you click a link, you stay signed in on that device via a signed browser **cookie** for **90 days** (or until you sign out).
 
 **Panel — Zotero:**
 > The recommended way to connect Zotero is a **public group library**, which needs no API key at all. If you instead provide a private read-only API key, it is **encrypted at rest** and **never displayed again** — not to you, not in any page. You can disconnect at any time.
@@ -903,14 +905,14 @@
 **Body:**
 > **Research Radar**
 >
-> Click to sign in — this link works once and expires in 20 minutes:
+> Click to sign in — this link works once and expires in 60 minutes:
 >
 > [ Sign in to Research Radar ]  ← button
 >
 > If you didn't request this, ignore this email.
 
 **Plain-text version:**
-> Sign in to Research Radar: «link» (This link works once and expires in 20 minutes.)
+> Sign in to Research Radar: «link» (This link works once and expires in 60 minutes.)
 
 ## Daily briefing email
 

@@ -196,6 +196,8 @@ def login(client, email: str):
     con.close()
     assert row and row["dev_link"]
     token_url = row["dev_link"].split("/auth/")[1]
-    r = client.get(f"/auth/{token_url}")
+    r = client.get(f"/auth/{token_url}")          # confirm page, token untouched
+    assert r.status_code == 200
+    r = client.post(f"/auth/{token_url}")         # redeems
     assert r.status_code == 303
     return r

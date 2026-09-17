@@ -53,15 +53,31 @@ def login_submit(request: Request, email: str = Form("")):
         con.close()
 
 
+LINK_ERROR = "That sign-in link is invalid, already used, or expired — request a fresh one."
+
+
 @router.get("/auth/{token}")
-def auth_click(request: Request, token: str):
+def auth_confirm(request: Request, token: str):
+    """Step 1 of 2: show a confirm button WITHOUT consuming the token. Email
+    security scanners fetch links before the recipient does; only the POST
+    below redeems, and scanners do not submit forms."""
+    con = db.connect()
+    try:
+        if not auth.token_is_live(con, token):
+            return render(request, "login.html", {"error": LINK_ERROR, "email": ""},
+                          status_code=400)
+        return render(request, "auth_confirm.html", {"token": token})
+    finally:
+        con.close()
+
+
+@router.post("/auth/{token}")
+def auth_redeem(request: Request, token: str):
     con = db.connect()
     try:
         email = auth.redeem_token(con, token)
         if not email:
-            return render(request, "login.html",
-                          {"error": "That sign-in link is invalid or expired — "
-                                    "request a fresh one.", "email": ""},
+            return render(request, "login.html", {"error": LINK_ERROR, "email": ""},
                           status_code=400)
         user = db.ensure_user(con, email)
         # welcome=1 surfaces the "signed in for 90 days on this device" note once

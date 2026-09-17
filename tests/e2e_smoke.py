@@ -90,7 +90,7 @@ def test_e2e_signup_onboard_pipeline_dashboard(server, test_db):
     row = test_db.execute("SELECT dev_link FROM auth_tokens WHERE email=?",
                           ("pilot@example.edu",)).fetchone()
     token = row["dev_link"].split("/auth/")[1]
-    code, headers, _ = b.get(f"/auth/{token}")
+    code, headers, _ = b.post(f"/auth/{token}", data={})
     assert code == 303 and headers["location"].startswith("/onboarding")
 
     # onboarding: 6 steps (structured interests)

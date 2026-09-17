@@ -6,15 +6,14 @@
     {% if ok %}
       <div class="big">&#128237;</div>
       <h2>You're unsubscribed</h2>
-      <p>Briefing emails to <strong>{{ email }}</strong> are off. Your radar keeps
-        running — your briefings are still on your
-        <a href="/dashboard">dashboard</a> whenever you want them, and you can turn
-        emails back on in <a href="/settings">Settings</a> anytime.</p>
+      <p>Briefing emails to <strong>{{ email }}</strong> are off. Your briefings are
+        still produced and available on your <a href="/dashboard">dashboard</a>,
+        and you can turn emails back on in <a href="/settings">Settings</a>.</p>
     {% else %}
       <div class="big">&#10067;</div>
       <h2>That unsubscribe link didn't work</h2>
       <p>The link may be incomplete. You can also turn briefing emails off in
-        <a href="/settings">Settings</a> (choose "Dashboard only").</p>
+        <a href="/settings">Settings</a> by choosing "Dashboard only".</p>
     {% endif %}
   </div>
 </div>

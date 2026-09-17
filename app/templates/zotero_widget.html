@@ -2,9 +2,9 @@
    Expects: zotero (row or None), zotero_collections, zotero_preview, znext #}
 <div class="panel" id="zotero">
   <h3 style="margin-bottom:4px">Link a Zotero library</h3>
-  <p class="hint" style="margin-bottom:10px">A quick way to add many seeds at once —
-    <strong>worth it if you have 20+ relevant papers saved</strong>. Pasting DOIs
-    above stays the simplest path.</p>
+  <p class="hint" style="margin-bottom:10px">A way to add many seeds at once,
+    useful if you have 20 or more relevant papers saved. Pasting DOIs above is
+    the simplest path.</p>
 
   {% if not zotero %}
     <div class="field-note">
@@ -48,7 +48,7 @@
           <em>library ID</em> ("userID") is shown in the Applications section there.
           Then click <em>"Create new private key"</em>, tick <em>read-only</em>
           access, and paste the key here. For a private group, the ID is the number
-          in the group's URL. We only ever read your library — the key is stored
+          in the group's URL. The tool only reads your library; the key is stored
           encrypted and never shown again.
         </div>
         <button class="btn btn-ghost" type="submit" style="margin-top:12px">Connect with API key</button>
@@ -62,7 +62,7 @@
     </p>
     <form method="post" action="/zotero/preview" style="margin-top:8px">
       <input type="hidden" name="next" value="{{ znext }}">
-      <label>What should we import?</label>
+      <label>What to import</label>
       <select name="collection_key">
         <option value="" {% if not zotero.collection_key %}selected{% endif %}>Entire library</option>
         {% for c in zotero_collections %}

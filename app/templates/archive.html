@@ -5,8 +5,8 @@
   <h1 class="page-title">Your briefing archive</h1>
   {% if n_days %}
   <p class="page-sub">{{ n_days }} briefing day{{ 's' if n_days != 1 }} ·
-    {{ n_items }} paper{{ 's' if n_items != 1 }} — every pick that ever made
-    your briefing stays here.</p>
+    {{ n_items }} paper{{ 's' if n_items != 1 }}. Every paper that appeared in a
+    briefing is kept here.</p>
   {% endif %}
 
   <form method="get" action="/archive" class="archive-search">
@@ -27,7 +27,7 @@
     <div class="empty">
       <div class="big">&#128225;</div>
       <h2>No matches</h2>
-      <p>Nothing in your archived briefings matches that search — try a
+      <p>Nothing in your archived briefings matches that search. Try a
         shorter word, or an author's last name.</p>
     </div>
     {% endif %}
@@ -55,9 +55,8 @@
     <div class="empty">
       <div class="big">&#128225;</div>
       <h2>No briefings archived yet</h2>
-      <p>Every briefing you receive is kept here, searchable, from your first
-        one on. Once your radar delivers its first picks, they'll appear on
-        this page.</p>
+      <p>Every briefing is kept here and is searchable. Papers appear on this
+        page once your first briefing has run.</p>
     </div>
   {% endif %}
 </div>

@@ -83,3 +83,23 @@ def test_secret_encryption_roundtrip():
     assert auth.encrypt_secret("") == ""
     assert auth.decrypt_secret("") == ""
     assert auth.decrypt_secret("not-base64!!") == ""
+
+
+def test_link_get_does_not_consume_token(client, test_db):
+    """Email link-scanners GET the URL before the person clicks; the GET must
+    only show the confirm page. Only the POST redeems (single-use)."""
+    r = client.post("/login", data={"email": "scan@example.com"})
+    assert r.status_code == 200
+    row = test_db.execute("SELECT dev_link FROM auth_tokens WHERE email=?",
+                          ("scan@example.com",)).fetchone()
+    token = row["dev_link"].split("/auth/")[1]
+    for _ in range(3):                                   # scanner prefetches
+        r = client.get(f"/auth/{token}")
+        assert r.status_code == 200 and "Confirm sign-in" in r.text
+    r = client.post(f"/auth/{token}")                    # the person clicks
+    assert r.status_code == 303
+    r = client.post(f"/auth/{token}")                    # second use refused
+    assert r.status_code == 400
+    r = client.get(f"/auth/{token}")                     # and GET now refused too
+    assert r.status_code == 400
+    assert client.get("/auth/bogus").status_code == 400

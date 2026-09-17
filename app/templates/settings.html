@@ -56,12 +56,12 @@
 
   <div class="panel">
     <h3>Priority journals ({{ priority_journals|length }})</h3>
-    <p class="hint">Journals whose new papers you never want to miss — your
-      field's flagship outlets, or a favorite niche journal. We fetch
-      <strong>every new paper</strong> they publish (even ones the seed-based
-      search wouldn't find), and any that sit reasonably close to your
-      interests get a <strong>guaranteed spot</strong> in front of the AI
-      judge. Picks from these journals are labeled in your briefing.</p>
+    <p class="hint">Journals whose new papers should always be screened, such as
+      your field's main outlets or a niche journal you follow. The pipeline
+      fetches <strong>every new paper</strong> they publish, including ones the
+      seed-based search would not find, and any that sit reasonably close to
+      your interests get a <strong>guaranteed slot</strong> before the AI judge.
+      Papers from these journals are labeled in your briefing.</p>
     {% include "_journals_editor.html" %}
   </div>
 
@@ -104,12 +104,11 @@
         high, papers you thumbed up that it scored low, and how each topic is
         performing. It unlocks once you've voted on
         <strong>{{ audit_min_votes }}</strong> papers, so it has real evidence
-        to work from — you've voted on {{ n_votes }} so far. Keep voting on
-        your briefings and this will light up.</p>
+        to work from. You have voted on {{ n_votes }} so far.</p>
       <button class="btn" disabled>Run profile audit</button>
     {% else %}
       <p class="hint">One AI pass over your criteria, your seeds, and your
-        {{ n_votes }} votes — it proposes specific wording edits
+        {{ n_votes }} votes. It proposes specific wording edits
         (current &rarr; suggested), citing the papers that motivate each.
         Nothing is applied automatically: take the ones you agree with into the
         Selection Criteria editor above.</p>
@@ -147,8 +146,8 @@
 
   <div class="panel">
     <h3>Seed papers ({{ seeds|length }})</h3>
-    <p class="hint">Seeds steer Gathering — the daily search covers the research areas
-      your seeds live in. Add papers you wish you'd been alerted to.</p>
+    <p class="hint">Seeds steer Gathering: the daily search covers the research areas
+      your seeds belong to. Add papers that represent what you want to find.</p>
     <form method="post" action="/settings/seeds/add">
       <label>Add seeds — DOIs or titles, one per line</label>
       <textarea name="papers" rows="3"></textarea>
@@ -177,9 +176,9 @@
     <h3>Delete account</h3>
     <p class="hint">Removes your account and <strong>all</strong> of your data —
       email, research-interest text, seed papers, votes, click logs, briefings, and
-      any Zotero connection — immediately and permanently. You'll receive no further
-      email from us. (See the <a href="/privacy">privacy note</a> for exactly what we
-      store.)</p>
+      any Zotero connection, immediately and permanently. No further email will be
+      sent. See the <a href="/privacy">privacy note</a> for exactly what is
+      stored.</p>
     <form method="post" action="/settings/delete-account"
           onsubmit="return this.confirm.value.trim().toUpperCase() === 'DELETE' || (alert('Type DELETE in the box to confirm.'), false)">
       <label>Type <code>DELETE</code> to confirm</label>

@@ -42,7 +42,7 @@ def send_magic_link(to: str, url: str) -> bool:
     html = f"""
     <div style="font-family:system-ui,sans-serif;max-width:480px;margin:0 auto">
       <h2 style="color:#1a56db">Research Radar</h2>
-      <p>Click to sign in — this link works once and expires in 20 minutes:</p>
+      <p>Click to sign in — this link works once and expires in 60 minutes:</p>
       <p><a href="{url}" style="display:inline-block;background:#1a56db;color:#fff;
          padding:12px 22px;border-radius:8px;text-decoration:none">Sign in to Research Radar</a></p>
       <p style="color:#666;font-size:13px">If this address doesn't have an account
@@ -52,5 +52,5 @@ def send_magic_link(to: str, url: str) -> bool:
     </div>"""
     return send(to, "Your Research Radar sign-in link", html,
                 text=f"Sign in to Research Radar: {url}\n(This link works once and "
-                     f"expires in 20 minutes. If this address has no account yet, "
+                     f"expires in 60 minutes. If this address has no account yet, "
                      f"it starts a fresh one.)")

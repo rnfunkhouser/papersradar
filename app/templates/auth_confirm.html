@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Confirm sign-in — Research Radar{% endblock %}
+{% block content %}
+<div class="wrap-narrow">
+  <div class="empty" style="margin-top:48px">
+    <h2>Confirm sign-in</h2>
+    <p>Press the button to finish signing in. This step keeps automated
+      link-checkers in email systems from using the link before you do.</p>
+    <form method="post" action="/auth/{{ token }}" style="margin-top:16px">
+      <button class="btn btn-lg" type="submit">Sign in</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

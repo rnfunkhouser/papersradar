@@ -2,9 +2,9 @@
 {% block title %}Sign in — Research Radar{% endblock %}
 {% block content %}
 <div class="wrap-narrow">
-  <h1 class="page-title">Sign in — or start your radar</h1>
-  <p class="page-sub">No passwords here. Enter your academic email and we'll send a
-    one-time sign-in link. New here? The same link creates your account.</p>
+  <h1 class="page-title">Sign in or create an account</h1>
+  <p class="page-sub">There are no passwords. Enter your email address to receive a
+    one-time sign-in link. If the address has no account yet, the link creates one.</p>
   {% if error %}<div class="error">{{ error }}</div>{% endif %}
   <div class="panel">
     <form method="post" action="/login">
@@ -13,14 +13,14 @@
              placeholder="you@university.edu" required autofocus>
       <button class="btn btn-lg" type="submit" style="margin-top:16px">Email me a sign-in link</button>
     </form>
-    <p class="hint" style="margin-top:14px">Sign-in links work once; after you click
-      one, you'll stay signed in on this device for 90 days (sign out anytime).</p>
+    <p class="hint" style="margin-top:14px">Sign-in links work once. After you confirm
+      one, you stay signed in on this device for 90 days, or until you sign out.</p>
   </div>
-  <p class="hint" style="margin:6px 0 40px"><strong>Your data:</strong> we store your
-    email, your research-interest text, your seed papers, and (if you use them) your
-    votes and briefing clicks — nothing more. We send you only the briefings you ask
-    for and login links you request, run no trackers, never sell or share data, and
-    you can delete everything yourself in Settings.
+  <p class="hint" style="margin:6px 0 40px"><strong>Your data:</strong> the tool stores
+    your email, your research-interest text, your seed papers, and (if you use them)
+    your votes and briefing clicks, nothing more. It sends only the briefings you ask
+    for and the sign-in links you request, runs no trackers, never sells or shares
+    data, and lets you delete everything yourself in Settings.
     <a href="/privacy">Full privacy note</a>.</p>
 </div>
 {% endblock %}
