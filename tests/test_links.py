@@ -117,6 +117,20 @@ def test_email_truncated_abstract_links_full_summary(client, test_db):
     assert f"/more/{lp}" in html_out
     assert "Full summary on your dashboard" in html_out
     assert f"/more/{sp}" not in html_out                   # untruncated: no link
+    # text/plain twin: same links, whole URLs on their own lines, no markup
+    text_out = briefings.render_email_text(user, rows, appdb.today())
+    lines = [l.strip() for l in text_out.splitlines()]
+    base = briefings.cfg("BASE_URL").rstrip("/")
+    for url in (f"{base}/out/{lp}?ctx=email", f"{base}/out/{sp}?ctx=email",
+                f"{base}/more/{lp}", f"{base}/dashboard", f"{base}/settings"):
+        assert url in lines
+    assert f"/more/{sp}" not in text_out
+    assert any(l.startswith(f"{base}/unsubscribe/") for l in lines)
+    assert "1. Long paper" in text_out and "2. Short paper" in text_out
+    assert "Fit 8/10" in text_out
+    assert "<" not in text_out and "&rarr;" not in text_out
+    assert all(len(l) <= briefings.TEXT_WIDTH
+               for l in text_out.splitlines() if "://" not in l)
 
 
 def test_about_page_is_technical_first_with_methods_note(client):

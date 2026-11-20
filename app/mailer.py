@@ -15,18 +15,28 @@ from app.config import cfg, smtp_configured
 log = logging.getLogger("papersradar.mail")
 
 
-def send(to: str, subject: str, html: str, text: str = "") -> bool:
-    """Returns True if actually sent. Dev mode logs and returns False."""
-    if not smtp_configured():
-        log.info("DEV-MODE email (not sent) to=%s subject=%r", to, subject)
-        return False
+def build_message(to: str, subject: str, html: str, text: str = "") -> EmailMessage:
+    """multipart/alternative when a text version is given, else HTML-only
+    (a placeholder text part would hide the HTML from text-first clients)."""
     msg = EmailMessage()
     msg["From"] = cfg("SMTP_FROM")
     msg["To"] = to
     msg["Subject"] = subject
     msg["Date"] = formatdate(localtime=True)
-    msg.set_content(text or "This message is best viewed as HTML.")
-    msg.add_alternative(html, subtype="html")
+    if text:
+        msg.set_content(text)
+        msg.add_alternative(html, subtype="html")
+    else:
+        msg.set_content(html, subtype="html")
+    return msg
+
+
+def send(to: str, subject: str, html: str, text: str = "") -> bool:
+    """Returns True if actually sent. Dev mode logs and returns False."""
+    if not smtp_configured():
+        log.info("DEV-MODE email (not sent) to=%s subject=%r", to, subject)
+        return False
+    msg = build_message(to, subject, html, text)
     host, port = cfg("SMTP_HOST"), int(cfg("SMTP_PORT"))
     with smtplib.SMTP(host, port, timeout=30) as s:
         s.starttls()

@@ -153,7 +153,7 @@ def test_stage_builds_episode_and_defers_email(test_db, podcast_env, monkeypatch
     from app import mailer
     sent = []
     monkeypatch.setattr(mailer, "send", lambda to, subj, html, text="":
-                        sent.append((to, subj, html)) or True)
+                        sent.append((to, subj, html, text)) or True)
     user = _seed_user_with_briefing(test_db, insert_items=False)
     _enable(test_db, user["email"])
     # briefings stage builds the items but defers the podcast user's email
@@ -166,6 +166,7 @@ def test_stage_builds_episode_and_defers_email(test_db, podcast_env, monkeypatch
     assert u["engines"]["anchor"] == "ok" and u["email_sent"]
     assert len(sent) == 1
     assert "Podcast" in sent[0][2] and "episode published" in sent[0][2]
+    assert "Paper 0 title" in sent[0][3] and "episode published" in sent[0][3]
     ep = test_db.execute("SELECT * FROM podcast_episodes").fetchone()
     assert ep["status"] == "ok" and ep["mime"] == "audio/wav"
     # short segments batch into ONE TTS call (free tier: 10 requests/day)
@@ -198,7 +199,7 @@ def test_engine_failure_recorded_and_emailed(test_db, podcast_env, monkeypatch):
     from app import mailer
     sent = []
     monkeypatch.setattr(mailer, "send", lambda to, subj, html, text="":
-                        sent.append(html) or True)
+                        sent.append(html + text) or True)
     monkeypatch.setattr(tts, "synthesize",
                         lambda *a, **k: (_ for _ in ()).throw(
                             tts.TTSError("free-tier quota exhausted")))
