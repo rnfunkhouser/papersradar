@@ -10,6 +10,7 @@ from __future__ import annotations
 import html
 import json
 import sys
+import textwrap
 import datetime as dt
 from pathlib import Path
 
@@ -125,57 +126,81 @@ def email_excerpt(text: str, limit: int = EMAIL_EXCERPT_CHARS) -> str:
     return (cut[:sp] if sp > 0 else cut) + " …"
 
 
-def render_email(user, rows, date: str) -> str:
+def _card(r, base: str) -> dict:
+    """Display fields for one pick, shared by the HTML and text renderers."""
+    try:
+        pj_name = r["pj_name"]
+    except (KeyError, IndexError):
+        pj_name = ""
+    # excerpt the GENERATED summary when one exists (it continues
+    # seamlessly on the dashboard card); abstract excerpt is the fallback
+    # for rows briefed/emailed before the summaries stage ran
+    try:
+        body = r["gen_summary"] or r["abstract"] or ""
+    except (KeyError, IndexError):
+        body = r["abstract"] or ""
+    excerpt = email_excerpt(body)
+    return {
+        "title": r["title"],
+        "authors": ", ".join(json.loads(r["authors_json"] or "[]")[:6]),
+        "venue": r["venue"] or "",
+        "pub_date": r["pub_date"] or "",
+        "flavors": ", ".join(f.replace("_", " ")
+                             for f in json.loads(r["flavors_json"] or "[]")),
+        "fit": f"{r['fit']:g}/10",
+        "pj_name": pj_name,
+        "why": r["why"] or "",
+        "excerpt": excerpt,
+        "link": f"{base}/out/{r['id']}?ctx=email",
+        "more": (f"{base}/more/{r['id']}" if excerpt != body.strip() else ""),
+    }
+
+
+def _email_context(user, rows, date: str) -> dict:
     from app import auth
     base = cfg("BASE_URL").rstrip("/")
-    nice = dt.date.fromisoformat(date).strftime("%A, %B %d, %Y")
-    unsub = auth.make_unsubscribe_token(user["id"])
-    freq_phrase = ("weekly (1-per-week)" if user["frequency"] == "weekly"
-                   else "daily (7-per-week)")
+    return {
+        "base": base,
+        "nice": dt.date.fromisoformat(date).strftime("%A, %B %d, %Y"),
+        "unsub": f"{base}/unsubscribe/{auth.make_unsubscribe_token(user['id'])}",
+        "freq_phrase": ("weekly (1-per-week)" if user["frequency"] == "weekly"
+                        else "daily (7-per-week)"),
+        "who": user["name"] or user["email"],
+        "cards": [_card(r, base) for r in rows],
+    }
+
+
+def render_email(user, rows, date: str) -> str:
+    ctx = _email_context(user, rows, date)
+    base = ctx["base"]
     cards = []
-    for r in rows:
-        flavors = ", ".join(f.replace("_", " ")
-                            for f in json.loads(r["flavors_json"] or "[]"))
-        authors = ", ".join(json.loads(r["authors_json"] or "[]")[:6])
-        link = f"{base}/out/{r['id']}?ctx=email"
-        try:
-            pj_name = r["pj_name"]
-        except (KeyError, IndexError):
-            pj_name = ""
+    for c in ctx["cards"]:
         pj_line = ""
-        if pj_name:
+        if c["pj_name"]:
             pj_line = (f'<div style="color:#3730a3;font-size:12px;margin:4px 0">'
-                       f'from <i>{html.escape(pj_name)}</i> — your priority list</div>')
-        # excerpt the GENERATED summary when one exists (it continues
-        # seamlessly on the dashboard card); abstract excerpt is the fallback
-        # for rows briefed/emailed before the summaries stage ran
-        try:
-            body = r["gen_summary"] or r["abstract"] or ""
-        except (KeyError, IndexError):
-            body = r["abstract"] or ""
-        excerpt = email_excerpt(body)
+                       f'from <i>{html.escape(c["pj_name"])}</i> — your priority list</div>')
         more = ""
-        if excerpt != body.strip():
-            more = (f' <a href="{base}/more/{r["id"]}" style="color:#1a56db">'
+        if c["more"]:
+            more = (f' <a href="{c["more"]}" style="color:#1a56db">'
                     f'Full summary on your dashboard &rarr;</a>')
         cards.append(f"""
         <div style="border:1px solid #e2e8f0;border-radius:10px;padding:16px;margin:0 0 14px">
           <div style="font-size:16px;font-weight:600;line-height:1.4">
-            <a href="{link}" style="color:#1a56db;text-decoration:none">{html.escape(r['title'])}</a></div>
-          <div style="color:#64748b;font-size:13px;margin:4px 0">{html.escape(authors)}
-            · <i>{html.escape(r['venue'] or '')}</i> · {html.escape(r['pub_date'] or '')}</div>
+            <a href="{c['link']}" style="color:#1a56db;text-decoration:none">{html.escape(c['title'])}</a></div>
+          <div style="color:#64748b;font-size:13px;margin:4px 0">{html.escape(c['authors'])}
+            · <i>{html.escape(c['venue'])}</i> · {html.escape(c['pub_date'])}</div>
           {pj_line}
           <div style="margin:6px 0"><span style="background:#eef2ff;color:#3730a3;
             border-radius:99px;padding:2px 10px;font-size:12px;font-weight:600">
-            {r['fit']:g}/10{(' · ' + html.escape(flavors)) if flavors else ''}</span></div>
-          <div style="color:#334155;font-size:14px;font-style:italic">{html.escape(r['why'] or '')}</div>
-          <div style="color:#475569;font-size:13px;margin-top:8px">{html.escape(excerpt)}{more}</div>
+            {c['fit']}{(' · ' + html.escape(c['flavors'])) if c['flavors'] else ''}</span></div>
+          <div style="color:#334155;font-size:14px;font-style:italic">{html.escape(c['why'])}</div>
+          <div style="color:#475569;font-size:13px;margin-top:8px">{html.escape(c['excerpt'])}{more}</div>
         </div>""")
     return f"""
     <div style="font-family:system-ui,-apple-system,sans-serif;max-width:640px;margin:0 auto;padding:8px">
       <h2 style="color:#1a56db;margin-bottom:2px"><img src="{base}/static/logo-email.png" width="28" height="28" alt="" style="vertical-align:-5px;margin-right:9px">Research Radar</h2>
-      <div style="color:#64748b;margin-bottom:18px">{nice} · {len(rows)} picks for
-        {html.escape(user['name'] or user['email'])}</div>
+      <div style="color:#64748b;margin-bottom:18px">{ctx['nice']} · {len(rows)} picks for
+        {html.escape(ctx['who'])}</div>
       {''.join(cards)}
       <div style="color:#94a3b8;font-size:12px;margin-top:16px">
         Each pick was scored by an AI judge reading the abstract against your Selection
@@ -187,12 +212,73 @@ def render_email(user, rows, date: str) -> str:
       <div style="color:#94a3b8;font-size:12px;margin-top:10px;border-top:1px solid #e2e8f0;padding-top:10px">
         Research Radar is a free tool that scans each day's new papers and preprints
         for the ones that fit your research. You're receiving this because you chose
-        {freq_phrase} briefings —
+        {ctx['freq_phrase']} briefings —
         <a href="{base}/settings" style="color:#1a56db">manage</a> or
-        <a href="{base}/unsubscribe/{unsub}" style="color:#1a56db">unsubscribe</a> in
+        <a href="{ctx['unsub']}" style="color:#1a56db">unsubscribe</a> in
         one click.
       </div>
     </div>"""
+
+
+TEXT_WIDTH = 72
+
+
+def wrap_text(text: str, indent: str = "") -> str:
+    """Fill prose at TEXT_WIDTH; never break inside a word or URL."""
+    return textwrap.fill(" ".join(text.split()), width=TEXT_WIDTH,
+                         initial_indent=indent, subsequent_indent=indent,
+                         break_long_words=False, break_on_hyphens=False)
+
+
+def render_email_text(user, rows, date: str) -> str:
+    """text/plain twin of render_email: same content, URLs whole on their
+    own lines so terminal clients and URL pickers can follow them."""
+    ctx = _email_context(user, rows, date)
+    base = ctx["base"]
+    ind = "   "
+    out = ["Research Radar",
+           wrap_text(f"{ctx['nice']} · {len(rows)} picks for {ctx['who']}"),
+           ""]
+    for n, c in enumerate(ctx["cards"], 1):
+        out.append(wrap_text(c["title"], ind).replace(ind, f"{n}.".ljust(len(ind)), 1))
+        meta = " · ".join(x for x in (c["authors"], c["venue"], c["pub_date"]) if x)
+        if meta:
+            out.append(wrap_text(meta, ind))
+        out.append(wrap_text(f"Fit {c['fit']}"
+                             + (f" · {c['flavors']}" if c["flavors"] else ""), ind))
+        if c["pj_name"]:
+            out.append(wrap_text(f"From {c['pj_name']} — your priority list", ind))
+        out.append(ind + c["link"])
+        if c["why"]:
+            out += ["", wrap_text(c["why"], ind)]
+        if c["excerpt"]:
+            out += ["", wrap_text(c["excerpt"], ind)]
+        if c["more"]:
+            out += ["", ind + "Full summary on your dashboard:", ind + c["more"]]
+        out.append("")
+    out += [
+        wrap_text("Each pick was scored by an AI judge reading the abstract "
+                  "against your Selection Criteria; the fit line shows its score "
+                  "and matched flavors. Picks are ranked by fit; equally fitting "
+                  "papers are ordered by closeness to your seed papers."),
+        "",
+        "Open your dashboard to vote on picks:",
+        f"{base}/dashboard",
+        "Tune your criteria:",
+        f"{base}/settings",
+        "",
+        "-- ",
+        wrap_text("Research Radar is a free tool that scans each day's new papers "
+                  "and preprints for the ones that fit your research. You're "
+                  f"receiving this because you chose {ctx['freq_phrase']} briefings."),
+        "",
+        "Manage:",
+        f"{base}/settings",
+        "Unsubscribe in one click:",
+        ctx["unsub"],
+        "",
+    ]
+    return "\n".join(out)
 
 
 def email_deferred_to_podcast(user) -> bool:
@@ -218,7 +304,8 @@ def run(con, date: str | None = None) -> dict:
                     deferred += 1
                     continue
                 subj = f"Research Radar — {len(rows)} picks for {date}"
-                if mailer.send(user["email"], subj, render_email(user, rows, date)):
+                if mailer.send(user["email"], subj, render_email(user, rows, date),
+                               text=render_email_text(user, rows, date)):
                     sent += 1
     summary = {"date": date, "users_with_items": built, "emails_sent": sent,
                "emails_deferred_to_podcast": deferred,

@@ -273,7 +273,8 @@ ENGINES = {"anchor": run_anchor, "nlm": run_nlm}
 
 # --- email with status footer -------------------------------------------------
 
-def status_footer(con, user, date: str) -> str:
+def _status_lines(con, user, date: str) -> list:
+    """(text, html) per enabled engine, for the briefing email footer."""
     lines = []
     for eng in engines_enabled():
         row = con.execute(
@@ -282,22 +283,38 @@ def status_footer(con, user, date: str) -> str:
         label = ENGINE_LABEL.get(eng, eng)
         if row and row["status"] == "ok":
             mins = max(1, round(row["duration_sec"] / 60))
-            lines.append(f"✅ [{label}] episode published — {mins} min, "
-                         f"in your podcast feed.")
+            line = (f"✅ [{label}] episode published — {mins} min, "
+                    f"in your podcast feed.")
+            lines.append((line, line))
         else:
-            cause = html.escape(row["detail"] if row else "engine did not run")
-            line = f"⚠️ [{label}] FAILED — {cause}"
+            cause = row["detail"] if row else "engine did not run"
+            text = f"⚠️ [{label}] FAILED — {cause}"
+            line = f"⚠️ [{label}] FAILED — {html.escape(cause)}"
             if eng == "nlm" and cfg("NLM_VNC_URL").strip():
+                text += (f" — if the Google session expired, re-login via "
+                         f"noVNC (runbook §NLM):\n{cfg('NLM_VNC_URL')}")
                 line += (f' — if the Google session expired, re-login via '
                          f'<a href="{cfg("NLM_VNC_URL")}">noVNC</a> '
                          f'(runbook §NLM).')
-            lines.append(line)
+            lines.append((text, line))
+    return lines
+
+
+def status_footer(con, user, date: str) -> str:
+    lines = [h for _, h in _status_lines(con, user, date)]
     if not lines:
         return ""
     body = "<br>".join(lines)
     return (f'<div style="color:#64748b;font-size:12px;margin-top:10px;'
             f'border-top:1px solid #e2e8f0;padding-top:10px">'
             f'<b>Podcast</b><br>{body}</div>')
+
+
+def status_footer_text(con, user, date: str) -> str:
+    lines = [t for t, _ in _status_lines(con, user, date)]
+    if not lines:
+        return ""
+    return "Podcast\n" + "\n".join(lines) + "\n"
 
 
 def send_briefing_email(con, user, rows, date: str) -> bool:
@@ -310,7 +327,9 @@ def send_briefing_email(con, user, rows, date: str) -> bool:
         return False
     body = briefings.render_email(user, rows, date) + status_footer(con, user, date)
     subj = f"Research Radar — {len(rows)} picks for {date}"
-    sent = mailer.send(user["email"], subj, body)
+    text = (briefings.render_email_text(user, rows, date) + "\n"
+            + status_footer_text(con, user, date))
+    sent = mailer.send(user["email"], subj, body, text=text)
     # record the attempt either way: dev mode (send()->False) must not retry
     con.execute("INSERT OR IGNORE INTO podcast_email_log(user_id, date, sent_at) "
                 "VALUES(?,?,?)", (user["id"], date, appdb.now()))
